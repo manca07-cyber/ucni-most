@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Učni Most – Bralnik</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/opendyslexic@0.91.12/opendyslexic/opendyslexic-regular.css" />
+
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --panel: #f3f3f3;
+      --accent: #4a7ecf;
+      --accent-hover: #3a6ab8;
+      --text: #1a1a2e;
+      --radius: 14px;
+      --shadow: 0 2px 12px rgba(0,0,0,.10);
+      --font: 'Lexend', sans-serif;
+      --fs: 20px;
+      --lh: 1.8;
+      --ls: 0.02em;
+    }
+
+    body {
+      font-family: var(--font);
+      font-size: var(--fs);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background .3s, color .3s;
+    }
+
+    /* ── Layout ── */
+    .app-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: .04em;
+    }
+    header p {
+      font-size: 1rem;
+      color: #555;
+      margin-top: 4px;
+    }
+
+    /* ── Control panel ── */
+    .panel {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 20px 24px 24px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow);
+    }
+    .panel-title {
+      font-size: .78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: #888;
+      margin-bottom: 14px;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    .ctrl-group label {
+      display: block;
+      font-size: .9rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    /* Select */
+    select {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 1rem;
+      font-family: inherit;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      background: #fff;
+      color: var(--text);
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%23555' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      cursor: pointer;
+      transition: border-color .2s;
+    }
+    select:focus { outline: none; border-color: var(--accent); }
+
+    /* Slider */
+    .slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    input[type=range] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 8px;
+      border-radius: 4px;
+      background: #ccc;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,.2);
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: none;
+    }
+    .slider-val {
+      min-width: 44px;
+      text-align: right;
+      font-size: .9rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* ── Color picker panel ── */
+    .color-panel {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 20px 24px 24px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow);
+    }
+
+    .color-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .color-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      cursor: pointer;
+      transition: transform .15s, border-color .15s;
+      position: relative;
+    }
+    .color-btn:hover { transform: scale(1.12); }
+    .color-btn.active { border-color: var(--accent); }
+    .color-btn[data-color="dark"] {
+      background: #1a1a2e;
+    }
+
+    .intensity-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .intensity-btn {
+      padding: 9px 20px;
+      border-radius: 30px;
+      border: 2px solid #ccc;
+      background: #fff;
+      font-family: inherit;
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s, border-color .2s, color .2s;
+    }
+    .intensity-btn:hover { border-color: var(--accent); }
+    .intensity-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* ── Text area ── */
+    .reader-box {
+      background: var(--bg);
+      border: 2px solid #ddd;
+      border-radius: var(--radius);
+      padding: 32px 36px;
+      box-shadow: var(--shadow);
+      font-family: var(--font);
+      font-size: var(--fs);
+      line-height: var(--lh);
+      letter-spacing: var(--ls);
+      color: var(--text);
+      transition: background .3s, color .3s, font-family .2s, font-size .2s, line-height .2s, letter-spacing .2s;
+    }
+
+    .reader-box h2 {
+      font-size: 1.25em;
+      margin-bottom: .6em;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .reader-box p {
+      margin-bottom: 1em;
+    }
+
+    /* ── Dark theme overrides ── */
+    body.dark-theme {
+      --panel: #2a2a40;
+      --text: #e8e8f0;
+    }
+    body.dark-theme select { background: #2a2a40; color: #e8e8f0; border-color: #444; }
+    body.dark-theme .intensity-btn { background: #2a2a40; color: #e8e8f0; border-color: #555; }
+    body.dark-theme .intensity-btn.active { background: var(--accent); color: #fff; }
+    body.dark-theme .reader-box { border-color: #444; }
+    body.dark-theme header p { color: #aaa; }
+
+    /* ── Responsive ── */
+    @media (max-width: 560px) {
+      .reader-box { padding: 20px 18px; }
+      .controls-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-wrap">
+
+  <header>
+    <h1>Učni Most</h1>
+    <p>Bralnik – prilagodi besedilo po svojih željah</p>
+  </header>
+
+  <!-- Font & sliders -->
+  <div class="panel">
+    <div class="panel-title">Nastavitve besedila</div>
+    <div class="controls-grid">
+
+      <div class="ctrl-group">
+        <label for="fontPicker">Pisava</label>
+        <select id="fontPicker">
+          <option value="'Lexend', sans-serif">Lexend</option>
+          <option value="'Atkinson Hyperlegible', sans-serif">Atkinson Hyperlegible</option>
+          <option value="'OpenDyslexic', sans-serif">OpenDyslexic</option>
+        </select>
+      </div>
+
+      <div class="ctrl-group">
+        <label for="fsSlider">Velikost črk</label>
+        <div class="slider-wrap">
+          <input type="range" id="fsSlider" min="14" max="38" step="1" value="20" />
+          <span class="slider-val" id="fsVal">20px</span>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <label for="lhSlider">Razmik med vrsticami</label>
+        <div class="slider-wrap">
+          <input type="range" id="lhSlider" min="1.2" max="3.0" step="0.1" value="1.8" />
+          <span class="slider-val" id="lhVal">1.8</span>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <label for="lsSlider">Razmik med črkami</label>
+        <div class="slider-wrap">
+          <input type="range" id="lsSlider" min="0" max="0.20" step="0.01" value="0.02" />
+          <span class="slider-val" id="lsVal">0.02em</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Background color -->
+  <div class="color-panel">
+    <div class="panel-title">Barva strani</div>
+
+    <div class="color-row" id="colorRow">
+      <button class="color-btn active" data-color="white"    title="Bela"          style="background:#ffffff; border-color:#ccc;"></button>
+      <button class="color-btn"        data-color="cream"    title="Kremna"         style="background:#fdf6e3;"></button>
+      <button class="color-btn"        data-color="lblue"    title="Svetlo modra"   style="background:#ddeeff;"></button>
+      <button class="color-btn"        data-color="yellow"   title="Nežno rumena"   style="background:#fffde7;"></button>
+      <button class="color-btn"        data-color="green"    title="Nežno zelena"   style="background:#e8f5e9;"></button>
+      <button class="color-btn"        data-color="pink"     title="Bledo roza"     style="background:#fce4ec;"></button>
+      <button class="color-btn"        data-color="gray"     title="Siva"           style="background:#eeeeee;"></button>
+      <button class="color-btn"        data-color="dark"     title="Temna"          style="background:#1a1a2e;"></button>
+    </div>
+
+    <div style="font-size:.9rem; font-weight:600; margin-bottom:10px; color:#666;">Jakost barve</div>
+    <div class="intensity-row" id="intensityRow">
+      <button class="intensity-btn"        data-intensity="gentle">Nežna</button>
+      <button class="intensity-btn active" data-intensity="medium">Srednja</button>
+      <button class="intensity-btn"        data-intensity="strong">Močnejša</button>
+    </div>
+  </div>
+
+  <!-- Sample text -->
+  <div class="reader-box" id="readerBox">
+    <h2>Potovanje v deželo čudes</h2>
+    <p>
+      Nekoč je živela deklica po imenu Zara, ki je imela rdeče kodraste lase in zelene oči, polne radovednosti.
+      Vsako jutro je tekla k veliki hrastovi drevesu na robu vasi in tam sedela ter opazovala svet okrog sebe.
+    </p>
+    <p>
+      Nekega dne je opazila majhno vrata v deblu drevesa. Bila so lesena, okrašena z zvezdicami in lunami.
+      Zara je previdno potrkala – enkrat, dvakrat, trikrat. Vrata so se počasi odprla in pred njo se je razprostrl
+      svetleč hodnik, obložen s tisoč drobnimi lučkami.
+    </p>
+    <p>
+      Na koncu hodnika je stal lisičji gospod v zelenem klobuku. »Dobrodošla,« je rekel z mehkim glasom.
+      »Tukaj je dežela čudes. Vsak, ki pride sem, prinese s seboj posebno darilo – svojo domišljijo.«
+    </p>
+    <p>
+      Zara je vzela globok dih in naredila prvi korak. Pod njeno nogo je zazvenel zvonček, nebo nad njo
+      pa se je posulo z zlatimi zvezdami, čeprav je bil sredi dneva.
+    </p>
+    <p>
+      »Kakšno darilo imam jaz?« je vprašala. Lisičji gospod se je nasmehnil in pokazal na njeno srce.
+      »Imeti radovedno srce je največje darilo od vseh.«
+    </p>
+  </div>
+
+</div>
+
+<script>
+  // ── Color definitions ──
+  const PALETTES = {
+    white:  { gentle: '#ffffff', medium: '#ffffff', strong: '#ffffff' },
+    cream:  { gentle: '#fefcf5', medium: '#fdf6e3', strong: '#f9eecc' },
+    lblue:  { gentle: '#f0f7ff', medium: '#ddeeff', strong: '#c0dfff' },
+    yellow: { gentle: '#fffef5', medium: '#fffde7', strong: '#fff9c4' },
+    green:  { gentle: '#f4fbf4', medium: '#e8f5e9', strong: '#c8e6c9' },
+    pink:   { gentle: '#fff5f8', medium: '#fce4ec', strong: '#f8bbd0' },
+    gray:   { gentle: '#f7f7f7', medium: '#eeeeee', strong: '#e0e0e0' },
+    dark:   { gentle: '#1a1a2e', medium: '#1a1a2e', strong: '#12121f' },
+  };
+
+  const TEXT_COLORS = {
+    white: '#1a1a2e', cream: '#2d2a1e', lblue: '#0d2a4a',
+    yellow: '#2a2800', green: '#0d2e0d', pink: '#3a0a1e',
+    gray: '#1a1a1a', dark: '#e8e8f0',
+  };
+
+  let state = {
+    color: 'white',
+    intensity: 'medium',
+  };
+
+  // ── Font ──
+  document.getElementById('fontPicker').addEventListener('change', function () {
+    document.documentElement.style.setProperty('--font', this.value);
+    document.getElementById('readerBox').style.fontFamily = this.value;
+  });
+
+  // ── Sliders ──
+  function bindSlider(id, valId, unit, cssVar, decimals) {
+    const slider = document.getElementById(id);
+    const valEl  = document.getElementById(valId);
+    slider.addEventListener('input', function () {
+      const v = parseFloat(this.value).toFixed(decimals);
+      valEl.textContent = v + unit;
+      document.documentElement.style.setProperty(cssVar, v + unit);
+      document.getElementById('readerBox').style.setProperty(
+        cssVar.replace('--', '').replace('fs', 'font-size').replace('lh', 'line-height').replace('ls', 'letter-spacing'),
+        v + unit
+      );
+    });
+  }
+
+  // Apply slider value directly to reader box via CSS vars
+  document.getElementById('fsSlider').addEventListener('input', function () {
+    const v = this.value;
+    document.getElementById('fsVal').textContent = v + 'px';
+    document.getElementById('readerBox').style.fontSize = v + 'px';
+  });
+  document.getElementById('lhSlider').addEventListener('input', function () {
+    const v = parseFloat(this.value).toFixed(1);
+    document.getElementById('lhVal').textContent = v;
+    document.getElementById('readerBox').style.lineHeight = v;
+  });
+  document.getElementById('lsSlider').addEventListener('input', function () {
+    const v = parseFloat(this.value).toFixed(2);
+    document.getElementById('lsVal').textContent = v + 'em';
+    document.getElementById('readerBox').style.letterSpacing = v + 'em';
+  });
+
+  // ── Color buttons ──
+  function applyColor() {
+    const bg = PALETTES[state.color][state.intensity];
+    const fg = TEXT_COLORS[state.color];
+    document.body.style.background = bg;
+    document.getElementById('readerBox').style.background = bg;
+    document.getElementById('readerBox').style.color = fg;
+    document.getElementById('readerBox').style.borderColor =
+      state.color === 'dark' ? '#444' : '#ddd';
+
+    if (state.color === 'dark') {
+      document.body.classList.add('dark-theme');
+    } else {
+      document.body.classList.remove('dark-theme');
+    }
+  }
+
+  document.getElementById('colorRow').querySelectorAll('.color-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      state.color = this.dataset.color;
+      applyColor();
+    });
+  });
+
+  document.getElementById('intensityRow').querySelectorAll('.intensity-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.intensity-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      state.intensity = this.dataset.intensity;
+      applyColor();
+    });
+  });
+</script>
+</body>
+</html>
