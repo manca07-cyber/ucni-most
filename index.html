@@ -406,6 +406,71 @@
       color: #fff;
     }
 
+    /* ── TTS panel ── */
+    .tts-panel {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 20px 24px 24px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow);
+    }
+
+    .tts-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .tts-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 28px;
+      border: none;
+      border-radius: 30px;
+      font-family: inherit;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, color .2s, opacity .2s, transform .1s;
+    }
+    .tts-btn:active:not(:disabled) { transform: scale(.97); }
+    .tts-btn:disabled { opacity: .4; cursor: default; }
+
+    .tts-btn.play  { background: #27ae60; color: #fff; }
+    .tts-btn.play:not(:disabled):hover  { background: #219a52; }
+    .tts-btn.pause { background: #e67e22; color: #fff; }
+    .tts-btn.pause:not(:disabled):hover { background: #cf6d17; }
+    .tts-btn.stop  { background: #c0392b; color: #fff; }
+    .tts-btn.stop:not(:disabled):hover  { background: #a93226; }
+
+    .tts-speed-row {
+      margin-bottom: 4px;
+    }
+
+    .tts-note {
+      font-size: .75rem;
+      color: #999;
+      margin-top: 14px;
+      font-style: italic;
+    }
+    body.dark-theme .tts-note { color: #777; }
+
+    /* ── TTS word highlight ── */
+    .tts-word { display: inline; }
+    .tts-word.tts-active {
+      background: #ffe066;
+      border-radius: 3px;
+      color: #1a1a1a !important;
+      box-shadow: 0 0 0 2px #ffe066;
+      transition: background .1s;
+    }
+    body.dark-theme .tts-word.tts-active {
+      background: #f0c400;
+      box-shadow: 0 0 0 2px #f0c400;
+    }
+
     /* ── Text area ── */
     .reader-box {
       background: var(--bg);
@@ -452,6 +517,7 @@
       .reader-box { padding: 20px 18px; }
       .controls-grid { grid-template-columns: 1fr; }
       .home-grid { grid-template-columns: 1fr; }
+      .tts-btn { padding: 14px 20px; font-size: 1rem; }
     }
   </style>
 </head>
@@ -590,31 +656,29 @@
       </div>
     </div>
 
-    <!-- Reader box -->
-    <div class="reader-box" id="readerBox">
-      <h2>Potovanje v deželo čudes</h2>
-      <p>
-        Nekoč je živela deklica po imenu Zara, ki je imela rdeče kodraste lase in zelene oči, polne radovednosti.
-        Vsako jutro je tekla k veliki hrastovi drevesu na robu vasi in tam sedela ter opazovala svet okrog sebe.
-      </p>
-      <p>
-        Nekega dne je opazila majhno vrata v deblu drevesa. Bila so lesena, okrašena z zvezdicami in lunami.
-        Zara je previdno potrkala – enkrat, dvakrat, trikrat. Vrata so se počasi odprla in pred njo se je razprostrl
-        svetleč hodnik, obložen s tisoč drobnimi lučkami.
-      </p>
-      <p>
-        Na koncu hodnika je stal lisičji gospod v zelenem klobuku. »Dobrodošla,« je rekel z mehkim glasom.
-        »Tukaj je dežela čudes. Vsak, ki pride sem, prinese s seboj posebno darilo – svojo domišljijo.«
-      </p>
-      <p>
-        Zara je vzela globok dih in naredila prvi korak. Pod njeno nogo je zazvenel zvonček, nebo nad njo
-        pa se je posulo z zlatimi zvezdami, čeprav je bil sredi dneva.
-      </p>
-      <p>
-        »Kakšno darilo imam jaz?« je vprašala. Lisičji gospod se je nasmehnil in pokazal na njeno srce.
-        »Imeti radovedno srce je največje darilo od vseh.«
-      </p>
+    <!-- ══ Branje na glas ══ -->
+    <div class="tts-panel">
+      <div class="panel-title">Branje na glas</div>
+
+      <div class="tts-buttons">
+        <button class="tts-btn play"  id="btnPlay"  onclick="playTTS()">▶ Predvajaj</button>
+        <button class="tts-btn pause" id="btnPause" onclick="pauseTTS()" disabled>⏸ Premor</button>
+        <button class="tts-btn stop"  id="btnStop"  onclick="stopTTS()"  disabled>⏹ Ustavi</button>
+      </div>
+
+      <div class="tts-speed-row ctrl-group">
+        <label for="ttsSpeed">Hitrost branja</label>
+        <div class="slider-wrap">
+          <input type="range" id="ttsSpeed" min="0.5" max="2" step="0.1" value="1" />
+          <span class="slider-val" id="ttsSpeedVal">1.0×</span>
+        </div>
+      </div>
+
+      <p class="tts-note">Začasni glas — kasneje ga zamenjamo z naravnim slovenskim glasom.</p>
     </div>
+
+    <!-- Reader box -->
+    <div class="reader-box" id="readerBox"></div>
 
   </div><!-- /screen-reader -->
 
@@ -623,6 +687,7 @@
 <script>
   // ── Navigation ──
   function showScreen(id) {
+    if (id !== 'screen-reader') stopTTS();
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     if (id === 'screen-saved') renderSavedList();
@@ -709,14 +774,26 @@
   }
 
   function setReaderText(txt) {
+    stopTTS();
     const box = document.getElementById('readerBox');
     box.innerHTML = '';
-    txt.split(/\n\n+/).forEach(block => {
-      const p = document.createElement('p');
-      p.textContent = block.replace(/\n/g, ' ');
-      box.appendChild(p);
+
+    const blocks = txt.split(/\n\n+/).map(b => b.replace(/\n/g, ' ').trim()).filter(Boolean);
+
+    blocks.forEach((block, i) => {
+      if (i === 0 && block.length < 80 && blocks.length > 1) {
+        const h = document.createElement('h2');
+        h.textContent = block;
+        box.appendChild(h);
+      } else {
+        const p = document.createElement('p');
+        p.textContent = block;
+        box.appendChild(p);
+      }
     });
+
     applyColor();
+    wrapWordsForTTS();
   }
 
   // ── Saved texts (localStorage) ──
@@ -786,6 +863,171 @@
   function escHtml(s) {
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
+
+  // ══════════════════════════════════════════════
+  // ── Branje na glas (Web Speech API) ──
+  // ══════════════════════════════════════════════
+
+  let ttsState = 'stopped'; // 'stopped' | 'playing' | 'paused'
+  let ttsUtteranceText = '';
+  let ttsWordSpans = []; // [{ el, start }] sorted by start
+
+  // Wrap every word in readerBox in a <span class="tts-word"> with data-start
+  function wrapWordsForTTS() {
+    const box = document.getElementById('readerBox');
+
+    // Unwrap any previous spans and normalise
+    box.querySelectorAll('.tts-word').forEach(span => {
+      const t = document.createTextNode(span.textContent);
+      span.parentNode.replaceChild(t, span);
+    });
+    box.normalize();
+
+    ttsWordSpans = [];
+    let offset = 0;
+    let utterance = '';
+
+    const walker = document.createTreeWalker(box, NodeFilter.SHOW_TEXT, null, false);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+
+    textNodes.forEach(textNode => {
+      const text = textNode.textContent;
+      const frag = document.createDocumentFragment();
+      const tokens = text.split(/(\s+)/);
+
+      tokens.forEach(token => {
+        if (!token) return;
+        if (/\S/.test(token)) {
+          const span = document.createElement('span');
+          span.className = 'tts-word';
+          span.dataset.start = offset;
+          span.textContent = token;
+          frag.appendChild(span);
+          ttsWordSpans.push({ el: span, start: offset });
+        } else {
+          frag.appendChild(document.createTextNode(token));
+        }
+        utterance += token;
+        offset += token.length;
+      });
+
+      textNode.parentNode.replaceChild(frag, textNode);
+    });
+
+    ttsUtteranceText = utterance.trim();
+  }
+
+  function highlightWord(charIndex) {
+    document.querySelectorAll('.tts-word.tts-active').forEach(el => el.classList.remove('tts-active'));
+    let found = null;
+    for (let i = ttsWordSpans.length - 1; i >= 0; i--) {
+      if (ttsWordSpans[i].start <= charIndex) {
+        found = ttsWordSpans[i];
+        break;
+      }
+    }
+    if (found) {
+      found.el.classList.add('tts-active');
+      found.el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
+
+  function clearHighlight() {
+    document.querySelectorAll('.tts-word.tts-active').forEach(el => el.classList.remove('tts-active'));
+  }
+
+  function updateTTSButtons() {
+    document.getElementById('btnPlay').disabled  = ttsState === 'playing';
+    document.getElementById('btnPause').disabled = ttsState !== 'playing';
+    document.getElementById('btnStop').disabled  = ttsState === 'stopped';
+  }
+
+  function playTTS() {
+    if (!('speechSynthesis' in window)) {
+      alert('Vaš brskalnik ne podpira branja na glas. Prosimo, poskusite v Chrome ali Edge.');
+      return;
+    }
+
+    if (ttsState === 'paused') {
+      window.speechSynthesis.resume();
+      ttsState = 'playing';
+      updateTTSButtons();
+      return;
+    }
+
+    if (ttsState === 'playing') return;
+
+    window.speechSynthesis.cancel();
+
+    if (!ttsUtteranceText) {
+      alert('V bralniku ni besedila za branje.');
+      return;
+    }
+
+    const utt = new SpeechSynthesisUtterance(ttsUtteranceText);
+    utt.lang = 'sl-SI';
+    utt.rate = parseFloat(document.getElementById('ttsSpeed').value);
+
+    utt.onboundary = function (e) {
+      if (e.name === 'word') highlightWord(e.charIndex);
+    };
+
+    utt.onend = function () {
+      ttsState = 'stopped';
+      clearHighlight();
+      updateTTSButtons();
+    };
+
+    utt.onerror = function () {
+      ttsState = 'stopped';
+      clearHighlight();
+      updateTTSButtons();
+    };
+
+    window.speechSynthesis.speak(utt);
+    ttsState = 'playing';
+    updateTTSButtons();
+  }
+
+  function pauseTTS() {
+    if (ttsState === 'playing') {
+      window.speechSynthesis.pause();
+      ttsState = 'paused';
+      updateTTSButtons();
+    }
+  }
+
+  function stopTTS() {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    ttsState = 'stopped';
+    clearHighlight();
+    updateTTSButtons();
+  }
+
+  // Speed slider
+  document.getElementById('ttsSpeed').addEventListener('input', function () {
+    document.getElementById('ttsSpeedVal').textContent = parseFloat(this.value).toFixed(1) + '×';
+  });
+
+  // ── Demo besedilo ──
+  const DEMO_TEXT = `Potovanje v deželo čudes
+
+Nekoč je živela deklica po imenu Zara, ki je imela rdeče kodraste lase in zelene oči, polne radovednosti. Vsako jutro je tekla k veliki hrastovi drevesu na robu vasi in tam sedela ter opazovala svet okrog sebe.
+
+Nekega dne je opazila majhna vrata v deblu drevesa. Bila so lesena, okrašena z zvezdicami in lunami. Zara je previdno potrkala – enkrat, dvakrat, trikrat. Vrata so se počasi odprla in pred njo se je razprostrl svetleč hodnik, obložen s tisoč drobnimi lučkami.
+
+Na koncu hodnika je stal lisičji gospod v zelenem klobuku. »Dobrodošla,« je rekel z mehkim glasom. »Tukaj je dežela čudes. Vsak, ki pride sem, prinese s seboj posebno darilo – svojo domišljijo.«
+
+Zara je vzela globok dih in naredila prvi korak. Pod njeno nogo je zazvenel zvonček, nebo nad njo pa se je posulo z zlatimi zvezdami, čeprav je bil sredi dneva.
+
+»Kakšno darilo imam jaz?« je vprašala. Lisičji gospod se je nasmehnil in pokazal na njeno srce. »Imeti radovedno srce je največje darilo od vseh.«`;
+
+  // Inicializacija ob nalaganju
+  document.addEventListener('DOMContentLoaded', function () {
+    setReaderText(DEMO_TEXT);
+  });
 </script>
 </body>
 </html>
