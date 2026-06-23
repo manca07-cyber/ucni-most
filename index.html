@@ -512,12 +512,167 @@
     body.dark-theme .home-btn.secondary { background: #2a2a40; color: #e8e8f0; }
     body.dark-theme .home-btn.disabled { background: #22223a; color: #666; }
 
+    /* ── Razumevanje screen ── */
+    .razumevanje-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .ai-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 32px 20px;
+      border-radius: var(--radius);
+      border: none;
+      font-family: inherit;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .15s, box-shadow .15s, opacity .2s;
+      box-shadow: var(--shadow);
+      text-align: center;
+      line-height: 1.3;
+      color: #fff;
+    }
+    .ai-btn:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0,0,0,.18);
+    }
+    .ai-btn:disabled { opacity: .5; cursor: default; transform: none; }
+    .ai-btn .btn-icon { font-size: 2.2rem; line-height: 1; }
+
+    .ai-btn.btn-simplify  { background: #5c6bc0; }
+    .ai-btn.btn-words     { background: #00897b; }
+    .ai-btn.btn-summary   { background: #e67e22; }
+    .ai-btn.btn-split     { background: #8e44ad; }
+
+    /* ── Loading spinner ── */
+    .ai-loading {
+      display: none;
+      align-items: center;
+      gap: 14px;
+      padding: 20px 24px;
+      background: var(--panel);
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .ai-loading.visible { display: flex; }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 4px solid #ccc;
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── AI result box ── */
+    .ai-result-wrap {
+      display: none;
+    }
+    .ai-result-wrap.visible { display: block; }
+
+    .ai-unverified-badge {
+      display: inline-block;
+      background: #fff3cd;
+      color: #856404;
+      border: 1.5px solid #ffc107;
+      border-radius: 20px;
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      margin-bottom: 12px;
+    }
+
+    .ai-result-box {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      box-shadow: var(--shadow);
+      font-size: 1.05rem;
+      line-height: 1.85;
+      color: var(--text);
+      margin-bottom: 16px;
+      white-space: pre-wrap;
+      border-left: 5px solid var(--accent);
+    }
+
+    .ai-result-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-tts-ai {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 26px;
+      background: #27ae60;
+      color: #fff;
+      border: none;
+      border-radius: 30px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-tts-ai:hover { background: #219a52; }
+    .btn-tts-ai.stop  { background: #c0392b; }
+    .btn-tts-ai.stop:hover { background: #a93226; }
+
+    .btn-use-in-reader {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 26px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 30px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-use-in-reader:hover { background: var(--accent-hover); }
+
+    .ai-error {
+      display: none;
+      background: #fdecea;
+      color: #c0392b;
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin-bottom: 16px;
+      font-size: .95rem;
+      font-weight: 600;
+      border-left: 5px solid #c0392b;
+    }
+    .ai-error.visible { display: block; }
+
     /* ── Responsive ── */
     @media (max-width: 560px) {
       .reader-box { padding: 20px 18px; }
       .controls-grid { grid-template-columns: 1fr; }
       .home-grid { grid-template-columns: 1fr; }
       .tts-btn { padding: 14px 20px; font-size: 1rem; }
+      .razumevanje-grid { grid-template-columns: 1fr; }
+      .ai-result-box { padding: 20px 18px; }
     }
   </style>
 </head>
@@ -547,6 +702,11 @@
       <button class="home-btn secondary" onclick="showScreen('screen-reader')">
         <span class="btn-icon">⚙️</span>
         Nastavitve branja
+      </button>
+
+      <button class="home-btn secondary" onclick="showScreen('screen-razumevanje')">
+        <span class="btn-icon">🧠</span>
+        Razumevanje
       </button>
 
       <button class="home-btn disabled" disabled>
@@ -681,6 +841,56 @@
     <div class="reader-box" id="readerBox"></div>
 
   </div><!-- /screen-reader -->
+
+  <!-- ══════════════ RAZUMEVANJE ══════════════ -->
+  <div class="screen" id="screen-razumevanje">
+    <button class="back-btn" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+
+    <div class="panel">
+      <div class="panel-title">Razumevanje besedila</div>
+      <p style="font-size:.95rem; color:#666; margin-bottom:20px; line-height:1.6;">
+        Izberi, kaj želiš narediti z besedilom iz bralnika. Odgovor ustvari umetna inteligenca.
+      </p>
+
+      <div class="razumevanje-grid">
+        <button class="ai-btn btn-simplify" onclick="callAI('simplify')">
+          <span class="btn-icon">✏️</span>
+          Povej bolj enostavno
+        </button>
+        <button class="ai-btn btn-words" onclick="callAI('words')">
+          <span class="btn-icon">📖</span>
+          Razloži težke besede
+        </button>
+        <button class="ai-btn btn-summary" onclick="callAI('summary')">
+          <span class="btn-icon">📝</span>
+          Naredi kratek povzetek
+        </button>
+        <button class="ai-btn btn-split" onclick="callAI('split')">
+          <span class="btn-icon">🧩</span>
+          Razdeli na manjše dele
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div class="ai-loading" id="aiLoading">
+        <div class="spinner"></div>
+        <span>Umetna inteligenca razmišlja … počakaj trenutek.</span>
+      </div>
+
+      <!-- Error -->
+      <div class="ai-error" id="aiError"></div>
+
+      <!-- Result -->
+      <div class="ai-result-wrap" id="aiResultWrap">
+        <span class="ai-unverified-badge">⚠️ nepreverjeno – odgovor je ustvarila umetna inteligenca</span>
+        <div class="ai-result-box" id="aiResultBox"></div>
+        <div class="ai-result-actions">
+          <button class="btn-tts-ai" id="btnAiTts" onclick="toggleAiTTS()">🔊 Preberi na glas</button>
+          <button class="btn-use-in-reader" onclick="useAiResultInReader()">📖 Odpri v bralniku</button>
+        </div>
+      </div>
+    </div>
+  </div><!-- /screen-razumevanje -->
 
 </div><!-- /app-wrap -->
 
@@ -1010,6 +1220,162 @@
   document.getElementById('ttsSpeed').addEventListener('input', function () {
     document.getElementById('ttsSpeedVal').textContent = parseFloat(this.value).toFixed(1) + '×';
   });
+
+  // ══════════════════════════════════════════════
+  // ── Razumevanje – AI klici ──
+  // ══════════════════════════════════════════════
+
+  const SUPABASE_URL = 'https://qjqdaqanymqlgzlknbas.supabase.co/functions/v1/ai';
+  const SUPABASE_ANON_KEY = 'TUKAJ_PRILEPI_ANON_KLJUC';
+
+  const AI_NAVODILA = {
+    simplify: 'Prepiši besedilo bolj enostavno. Uporabi kratke stavke. Izberi preproste besede. Piši tako, da bo razumel otrok z disleksijo, ki ima 10 let. Ne dodajaj ničesar novega, samo poenostavi.',
+    words: 'Poišči težke ali neznane besede v besedilu. Za vsako besedo napiši kratko in preprosto razlago v slovenščini. Piši tako, da bo razumel otrok z disleksijo. Uporabi obliko: Beseda: razlaga.',
+    summary: 'Napiši kratek povzetek besedila v slovenščini. Povzetek naj bo kratek – največ 5 stavkov. Uporabi preproste besede in kratke stavke. Piši za otroka z disleksijo, ki ima 10 let.',
+    split: 'Razdeli besedilo na manjše dele. Vsak del naj ima naslov in kratko razlago v 2–3 stavkih. Uporabi preproste besede. Piši za otroka z disleksijo.',
+  };
+
+  let aiTtsUtterance = null;
+  let aiTtsPlaying = false;
+
+  function getReaderText() {
+    const box = document.getElementById('readerBox');
+    return box ? box.innerText.trim() : '';
+  }
+
+  async function callAI(tip) {
+    const besedilo = getReaderText();
+    if (!besedilo) {
+      showAiError('V bralniku ni besedila. Najprej prilepi ali odpri besedilo v bralniku.');
+      return;
+    }
+
+    const navodilo = AI_NAVODILA[tip];
+
+    setAiLoading(true);
+    hideAiResult();
+    hideAiError();
+    disableAiBtns(true);
+
+    try {
+      const resp = await fetch(SUPABASE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ besedilo, navodilo }),
+      });
+
+      if (!resp.ok) {
+        const txt = await resp.text().catch(() => '');
+        throw new Error('Strežnik je vrnil napako ' + resp.status + (txt ? ': ' + txt : ''));
+      }
+
+      const data = await resp.json();
+      const rezultat = data.rezultat || data.result || data.odgovor || data.text || data.content || '';
+
+      if (!rezultat) throw new Error('Strežnik ni vrnil besedila.');
+
+      showAiResult(rezultat);
+    } catch (err) {
+      showAiError('Napaka pri klicu umetne inteligence: ' + err.message);
+    } finally {
+      setAiLoading(false);
+      disableAiBtns(false);
+    }
+  }
+
+  function setAiLoading(on) {
+    document.getElementById('aiLoading').classList.toggle('visible', on);
+  }
+
+  function showAiResult(txt) {
+    stopAiTTS();
+    document.getElementById('aiResultBox').textContent = txt;
+    document.getElementById('aiResultWrap').classList.add('visible');
+    document.getElementById('btnAiTts').textContent = '🔊 Preberi na glas';
+    document.getElementById('btnAiTts').classList.remove('stop');
+  }
+
+  function hideAiResult() {
+    stopAiTTS();
+    document.getElementById('aiResultWrap').classList.remove('visible');
+  }
+
+  function showAiError(msg) {
+    const el = document.getElementById('aiError');
+    el.textContent = msg;
+    el.classList.add('visible');
+  }
+
+  function hideAiError() {
+    document.getElementById('aiError').classList.remove('visible');
+  }
+
+  function disableAiBtns(dis) {
+    document.querySelectorAll('.ai-btn').forEach(b => b.disabled = dis);
+  }
+
+  function toggleAiTTS() {
+    if (aiTtsPlaying) {
+      stopAiTTS();
+    } else {
+      playAiTTS();
+    }
+  }
+
+  function playAiTTS() {
+    if (!('speechSynthesis' in window)) {
+      alert('Vaš brskalnik ne podpira branja na glas.');
+      return;
+    }
+    const txt = document.getElementById('aiResultBox').textContent.trim();
+    if (!txt) return;
+
+    window.speechSynthesis.cancel();
+    aiTtsUtterance = new SpeechSynthesisUtterance(txt);
+    aiTtsUtterance.lang = 'sl-SI';
+    aiTtsUtterance.rate = 0.9;
+
+    aiTtsUtterance.onend = function () {
+      aiTtsPlaying = false;
+      updateAiTtsBtn();
+    };
+    aiTtsUtterance.onerror = function () {
+      aiTtsPlaying = false;
+      updateAiTtsBtn();
+    };
+
+    window.speechSynthesis.speak(aiTtsUtterance);
+    aiTtsPlaying = true;
+    updateAiTtsBtn();
+  }
+
+  function stopAiTTS() {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    aiTtsPlaying = false;
+    updateAiTtsBtn();
+  }
+
+  function updateAiTtsBtn() {
+    const btn = document.getElementById('btnAiTts');
+    if (!btn) return;
+    if (aiTtsPlaying) {
+      btn.textContent = '⏹ Ustavi branje';
+      btn.classList.add('stop');
+    } else {
+      btn.textContent = '🔊 Preberi na glas';
+      btn.classList.remove('stop');
+    }
+  }
+
+  function useAiResultInReader() {
+    const txt = document.getElementById('aiResultBox').textContent.trim();
+    if (!txt) return;
+    setReaderText(txt);
+    showScreen('screen-reader');
+  }
 
   // ── Demo besedilo ──
   const DEMO_TEXT = `Potovanje v deželo čudes
