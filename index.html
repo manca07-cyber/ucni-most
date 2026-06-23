@@ -665,6 +665,203 @@
     }
     .ai-error.visible { display: block; }
 
+    /* ── Ponavljanje screen ── */
+    .ponavljanje-header {
+      font-size: .95rem;
+      color: #666;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+    body.dark-theme .ponavljanje-header { color: #aaa; }
+
+    .ponavljanje-main-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      width: 100%;
+      padding: 24px 32px;
+      background: #e67e22;
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, transform .15s, box-shadow .15s;
+      box-shadow: var(--shadow);
+      margin-bottom: 28px;
+    }
+    .ponavljanje-main-btn:hover:not(:disabled) {
+      background: #cf6d17;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,.16);
+    }
+    .ponavljanje-main-btn:disabled { opacity: .5; cursor: default; transform: none; }
+    .ponavljanje-main-btn .btn-icon { font-size: 1.8rem; }
+
+    .pon-section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 16px;
+      margin-top: 32px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--accent);
+    }
+
+    /* Flip cards */
+    .kartice-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .karta-wrap {
+      height: 160px;
+      perspective: 800px;
+      cursor: pointer;
+    }
+
+    .karta-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform .5s cubic-bezier(.4,0,.2,1);
+    }
+    .karta-wrap.flipped .karta-inner {
+      transform: rotateY(180deg);
+    }
+
+    .karta-front, .karta-back {
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1rem;
+      line-height: 1.45;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      box-shadow: var(--shadow);
+    }
+    .karta-front {
+      background: var(--accent);
+      color: #fff;
+    }
+    .karta-back {
+      background: var(--panel);
+      color: var(--text);
+      transform: rotateY(180deg);
+      border: 2px solid var(--accent);
+    }
+
+    .kartice-hint {
+      font-size: .82rem;
+      color: #999;
+      margin-bottom: 4px;
+      font-style: italic;
+    }
+
+    /* Quiz */
+    .kviz-vprasanje {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .kviz-vprasanje-text {
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    .kviz-moznosti {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .kviz-moznost {
+      padding: 12px 18px;
+      border: 2px solid #ccc;
+      border-radius: 30px;
+      background: #fff;
+      font-family: inherit;
+      font-size: .95rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color .2s, background .2s, color .2s;
+    }
+    body.dark-theme .kviz-moznost { background: #1a1a2e; color: #e8e8f0; border-color: #555; }
+    .kviz-moznost:hover:not(:disabled) { border-color: var(--accent); background: #eef3fb; }
+    body.dark-theme .kviz-moznost:hover:not(:disabled) { background: #2a2a40; }
+    .kviz-moznost.pravilna { border-color: #27ae60; background: #eafaf1; color: #1a5c34; }
+    body.dark-theme .kviz-moznost.pravilna { background: #0d3320; color: #6ddb99; }
+    .kviz-moznost.napacna  { border-color: #c0392b; background: #fdecea; color: #7b1a10; }
+    body.dark-theme .kviz-moznost.napacna  { background: #3a0f0a; color: #f1948a; }
+    .kviz-moznost:disabled { cursor: default; }
+
+    .kviz-feedback {
+      margin-top: 10px;
+      font-size: .9rem;
+      font-weight: 700;
+      display: none;
+    }
+    .kviz-feedback.show { display: block; }
+    .kviz-feedback.ok  { color: #27ae60; }
+    .kviz-feedback.err { color: #c0392b; }
+
+    .kviz-footer {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    /* Tezke besede */
+    .tezke-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .tezka-beseda {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .tezka-beseda-ime {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--accent);
+      min-width: 120px;
+      flex-shrink: 0;
+    }
+
+    .tezka-beseda-razlaga {
+      font-size: .95rem;
+      line-height: 1.55;
+      color: var(--text);
+    }
+
     /* ── Responsive ── */
     @media (max-width: 560px) {
       .reader-box { padding: 20px 18px; }
@@ -673,6 +870,9 @@
       .tts-btn { padding: 14px 20px; font-size: 1rem; }
       .razumevanje-grid { grid-template-columns: 1fr; }
       .ai-result-box { padding: 20px 18px; }
+      .kartice-grid { grid-template-columns: 1fr 1fr; }
+      .tezka-beseda { flex-direction: column; gap: 4px; }
+      .tezka-beseda-ime { min-width: unset; }
     }
   </style>
 </head>
@@ -707,6 +907,11 @@
       <button class="home-btn secondary" onclick="showScreen('screen-razumevanje')">
         <span class="btn-icon">🧠</span>
         Razumevanje
+      </button>
+
+      <button class="home-btn secondary" onclick="showScreen('screen-ponavljanje')">
+        <span class="btn-icon">🔁</span>
+        Ponavljanje
       </button>
 
       <button class="home-btn disabled" disabled>
@@ -750,7 +955,11 @@
 
   <!-- ══════════════ BRALNIK + NASTAVITVE ══════════════ -->
   <div class="screen" id="screen-reader">
-    <button class="back-btn" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:28px;">
+      <button class="back-btn" style="margin-bottom:0;" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+      <button class="back-btn" style="margin-bottom:0; background:var(--accent); color:#fff; border-color:var(--accent);" onclick="showScreen('screen-razumevanje')">🧠 Razumevanje</button>
+      <button class="back-btn" style="margin-bottom:0; background:#e67e22; color:#fff; border-color:#e67e22;" onclick="showScreen('screen-ponavljanje')">🔁 Ponavljanje</button>
+    </div>
 
     <!-- Font & sliders -->
     <div class="panel">
@@ -891,6 +1100,56 @@
       </div>
     </div>
   </div><!-- /screen-razumevanje -->
+
+  <!-- ══════════════ PONAVLJANJE ══════════════ -->
+  <div class="screen" id="screen-ponavljanje">
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:28px;">
+      <button class="back-btn" style="margin-bottom:0;" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+      <button class="back-btn" style="margin-bottom:0;" onclick="showScreen('screen-reader')">📖 Bralnik</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Ponavljanje</div>
+      <p class="ponavljanje-header">
+        Klikni spodnji gumb in umetna inteligenca bo ustvarila gradivo za ponavljanje iz besedila v bralniku.
+      </p>
+
+      <button class="ponavljanje-main-btn" id="btnPripravi" onclick="callPonavljanje()">
+        <span class="btn-icon">🔁</span>
+        Pripravi ponavljanje
+      </button>
+
+      <!-- Loading -->
+      <div class="ai-loading" id="ponLoading">
+        <div class="spinner"></div>
+        <span>Pripravljam gradivo za ponavljanje … počakaj trenutek.</span>
+      </div>
+
+      <!-- Error -->
+      <div class="ai-error" id="ponError"></div>
+
+      <!-- Result -->
+      <div id="ponResultWrap" style="display:none;">
+        <span class="ai-unverified-badge">⚠️ nepreverjeno – gradivo je ustvarila umetna inteligenca</span>
+
+        <!-- 1. Kartice -->
+        <div class="pon-section-title">🃏 Kartice</div>
+        <p class="kartice-hint">Klikni kartico, da jo obrneš.</p>
+        <div class="kartice-grid" id="karticGrid"></div>
+
+        <!-- 2. Kviz -->
+        <div class="pon-section-title">❓ Kviz</div>
+        <div id="kvizWrap"></div>
+        <div class="kviz-footer">
+          <button class="btn-secondary" id="btnPonoviNapacne" onclick="ponoviNapacne()" style="display:none;">🔄 Ponovi napačne</button>
+        </div>
+
+        <!-- 3. Težke besede -->
+        <div class="pon-section-title">📚 Težke besede</div>
+        <div class="tezke-list" id="tezkeWrap"></div>
+      </div>
+    </div>
+  </div><!-- /screen-ponavljanje -->
 
 </div><!-- /app-wrap -->
 
@@ -1384,6 +1643,193 @@
     if (!txt) return;
     setReaderText(txt);
     showScreen('screen-reader');
+  }
+
+  // ══════════════════════════════════════════════
+  // ── Ponavljanje ──
+  // ══════════════════════════════════════════════
+
+  let kvizVprasanja = [];
+  let napacneIndeksi = [];
+
+  async function callPonavljanje() {
+    const besedilo = getReaderText();
+    if (!besedilo) {
+      showPonError('V bralniku ni besedila. Najprej prilepi ali odpri besedilo v bralniku.');
+      return;
+    }
+
+    const navodilo = `Odgovori IZKLJUČNO z veljavnim JSON-om (brez markdown oznak, brez dodatnega besedila, brez ```json). JSON mora biti točno v tej obliki:
+{"kartice":[{"pojem":"...","razlaga":"..."}],"kviz":[{"vprasanje":"...","moznosti":["...","...","..."],"pravilni_index":0}],"tezke_besede":[{"beseda":"...","razlaga":"..."}]}
+
+Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih besed (kolikor jih je v besedilu, vsaj 3). Vse v slovenščini, kratki stavki, preprost jezik, primerno otroku z disleksijo.`;
+
+    setPonLoading(true);
+    hidePonResult();
+    hidePonError();
+    document.getElementById('btnPripravi').disabled = true;
+
+    try {
+      const resp = await fetch(SUPABASE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ besedilo, navodilo }),
+      });
+
+      if (!resp.ok) {
+        const txt = await resp.text().catch(() => '');
+        throw new Error('Strežnik je vrnil napako ' + resp.status + (txt ? ': ' + txt : ''));
+      }
+
+      const data = await resp.json();
+
+      // Pridobi surovo besedilo odgovora
+      let raw = data.rezultat || data.result || data.odgovor || '';
+      if (!raw) {
+        const content = data.text || data.content || '';
+        if (Array.isArray(content)) {
+          raw = content.filter(b => b.type === 'text').map(b => b.text).join('\n');
+        } else {
+          raw = content;
+        }
+      }
+
+      if (!raw) throw new Error('Strežnik ni vrnil besedila.');
+
+      // Varno razčleni JSON — odstrani morebitne ```json oznake
+      let jsonStr = raw.trim();
+      jsonStr = jsonStr.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+
+      let gradivo;
+      try {
+        gradivo = JSON.parse(jsonStr);
+      } catch (e) {
+        showPonError('Poskusi znova — odgovor ni bil v pričakovani obliki.');
+        return;
+      }
+
+      renderPonavljanje(gradivo);
+
+    } catch (err) {
+      showPonError('Napaka: ' + err.message + ' — Poskusi znova.');
+    } finally {
+      setPonLoading(false);
+      document.getElementById('btnPripravi').disabled = false;
+    }
+  }
+
+  function setPonLoading(on) {
+    document.getElementById('ponLoading').classList.toggle('visible', on);
+  }
+
+  function hidePonResult() {
+    document.getElementById('ponResultWrap').style.display = 'none';
+  }
+
+  function showPonError(msg) {
+    const el = document.getElementById('ponError');
+    el.textContent = msg;
+    el.classList.add('visible');
+  }
+
+  function hidePonError() {
+    document.getElementById('ponError').classList.remove('visible');
+  }
+
+  function renderPonavljanje(gradivo) {
+    // ── Kartice ──
+    const grid = document.getElementById('karticGrid');
+    grid.innerHTML = '';
+    (gradivo.kartice || []).forEach(k => {
+      const wrap = document.createElement('div');
+      wrap.className = 'karta-wrap';
+      wrap.innerHTML = `<div class="karta-inner">
+        <div class="karta-front">${escHtml(k.pojem)}</div>
+        <div class="karta-back">${escHtml(k.razlaga)}</div>
+      </div>`;
+      wrap.addEventListener('click', () => wrap.classList.toggle('flipped'));
+      grid.appendChild(wrap);
+    });
+
+    // ── Kviz ──
+    kvizVprasanja = gradivo.kviz || [];
+    napacneIndeksi = [];
+    renderKviz(kvizVprasanja.map((_, i) => i));
+
+    // ── Težke besede ──
+    const tezke = document.getElementById('tezkeWrap');
+    tezke.innerHTML = '';
+    (gradivo.tezke_besede || []).forEach(b => {
+      const el = document.createElement('div');
+      el.className = 'tezka-beseda';
+      el.innerHTML = `<div class="tezka-beseda-ime">${escHtml(b.beseda)}</div><div class="tezka-beseda-razlaga">${escHtml(b.razlaga)}</div>`;
+      tezke.appendChild(el);
+    });
+
+    document.getElementById('ponResultWrap').style.display = 'block';
+  }
+
+  function renderKviz(indeksi) {
+    const wrap = document.getElementById('kvizWrap');
+    wrap.innerHTML = '';
+    document.getElementById('btnPonoviNapacne').style.display = 'none';
+
+    indeksi.forEach(qi => {
+      const q = kvizVprasanja[qi];
+      if (!q) return;
+      const div = document.createElement('div');
+      div.className = 'kviz-vprasanje';
+      div.dataset.qi = qi;
+      div.dataset.answered = 'false';
+
+      let moznostiHtml = q.moznosti.map((m, mi) =>
+        `<button class="kviz-moznost" data-mi="${mi}" onclick="odgovoriKviz(this,${qi},${mi})">${escHtml(m)}</button>`
+      ).join('');
+
+      div.innerHTML = `<div class="kviz-vprasanje-text">${escHtml(q.vprasanje)}</div>
+        <div class="kviz-moznosti">${moznostiHtml}</div>
+        <div class="kviz-feedback"></div>`;
+      wrap.appendChild(div);
+    });
+  }
+
+  function odgovoriKviz(btn, qi, mi) {
+    const q = kvizVprasanja[qi];
+    const vprasanjeDiv = btn.closest('.kviz-vprasanje');
+    if (vprasanjeDiv.dataset.answered === 'true') return;
+    vprasanjeDiv.dataset.answered = 'true';
+
+    const feedback = vprasanjeDiv.querySelector('.kviz-feedback');
+    vprasanjeDiv.querySelectorAll('.kviz-moznost').forEach(b => b.disabled = true);
+
+    if (mi === q.pravilni_index) {
+      btn.classList.add('pravilna');
+      feedback.textContent = '✅ Pravilno!';
+      feedback.className = 'kviz-feedback show ok';
+      // Odstrani iz napačnih, če je bil tam
+      napacneIndeksi = napacneIndeksi.filter(i => i !== qi);
+    } else {
+      btn.classList.add('napacna');
+      vprasanjeDiv.querySelectorAll('.kviz-moznost')[q.pravilni_index].classList.add('pravilna');
+      feedback.textContent = '❌ Napačno. Pravilni odgovor je označen z zeleno.';
+      feedback.className = 'kviz-feedback show err';
+      if (!napacneIndeksi.includes(qi)) napacneIndeksi.push(qi);
+    }
+
+    // Pokaži gumb za ponavljanje napačnih, če so kakšne napake
+    if (napacneIndeksi.length > 0) {
+      document.getElementById('btnPonoviNapacne').style.display = 'inline-flex';
+    }
+  }
+
+  function ponoviNapacne() {
+    if (!napacneIndeksi.length) return;
+    const indeksi = [...napacneIndeksi];
+    napacneIndeksi = [];
+    renderKviz(indeksi);
   }
 
   // ── Demo besedilo ──
