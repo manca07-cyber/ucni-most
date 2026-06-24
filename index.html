@@ -952,6 +952,65 @@
     body.dark-theme .snov-item { background: #2a2a40; }
     body.dark-theme #snovBesediloNaslov { background: #2a2a40; color: #e8e8f0; border-color: #444; }
 
+    /* ── Slikaj stran ── */
+    .slikaj-upload-row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .slikaj-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px 32px;
+      border-radius: 30px;
+      font-family: inherit;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+      border: none;
+    }
+    .slikaj-btn.camera { background: var(--accent); color: #fff; }
+    .slikaj-btn.camera:hover { background: var(--accent-hover); }
+    .slikaj-btn.file   { background: none; color: var(--accent); border: 2px solid var(--accent); }
+    .slikaj-btn.file:hover { background: var(--accent); color: #fff; }
+
+    .slikaj-warning {
+      background: #fff3cd;
+      border: 1.5px solid #ffc107;
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      font-size: .92rem;
+      color: #856404;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+    body.dark-theme .slikaj-warning { background: #3a2f00; color: #ffd54f; border-color: #f0a500; }
+
+    .snov-select-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: var(--panel);
+      border: 2px solid transparent;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+      transition: border-color .2s, transform .1s;
+      color: var(--text);
+    }
+    .snov-select-btn:hover { border-color: var(--accent); transform: translateY(-2px); }
+    body.dark-theme .snov-select-btn { background: #2a2a40; }
+    body.dark-theme #slikajSnovNaslovInput { background: #2a2a40; color: #e8e8f0; border-color: #444; }
+
     /* ── Responsive ── */
     @media (max-width: 560px) {
       .reader-box { padding: 20px 18px; }
@@ -1010,10 +1069,9 @@
         Moja šolska snov
       </button>
 
-      <button class="home-btn disabled" disabled>
+      <button class="home-btn secondary" onclick="showScreen('screen-slikaj')">
         <span class="btn-icon">📷</span>
         Slikaj stran
-        <span class="soon-badge">kmalu</span>
       </button>
 
       <button class="home-btn disabled" disabled>
@@ -1321,6 +1379,105 @@
       <div id="snovBesedilaList" class="snov-list"></div>
     </div>
   </div>
+
+  <!-- ══════════════ SLIKAJ STRAN ══════════════ -->
+  <div class="screen" id="screen-slikaj">
+    <button class="back-btn" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+
+    <div class="panel">
+      <div class="panel-title">📷 Slikaj stran ali naloži sliko</div>
+      <p style="font-size:.95rem;color:#666;margin-bottom:20px;line-height:1.6;">
+        Fotografiraj stran učbenika ali naloži sliko – umetna inteligenca bo prebrala besedilo.
+      </p>
+
+      <!-- Skriti vhodi za datoteke -->
+      <input type="file" id="slikajInputCamera" accept="image/*" capture="environment" style="display:none;" onchange="handleSlikajFile(event)" />
+      <input type="file" id="slikajInputFile"   accept="image/*" style="display:none;"                        onchange="handleSlikajFile(event)" />
+
+      <div class="slikaj-upload-row">
+        <button class="slikaj-btn camera" onclick="document.getElementById('slikajInputCamera').click()">
+          📷 Fotografiraj stran
+        </button>
+        <button class="slikaj-btn file" onclick="document.getElementById('slikajInputFile').click()">
+          🖼️ Naloži sliko
+        </button>
+      </div>
+
+      <!-- Nalaganje -->
+      <div class="ai-loading" id="slikajLoading">
+        <div class="spinner"></div>
+        <span>Berem besedilo s slike … to lahko traja trenutek.</span>
+      </div>
+
+      <!-- Napaka -->
+      <div class="ai-error" id="slikajError"></div>
+
+      <!-- Rezultat -->
+      <div id="slikajResultWrap" style="display:none;">
+        <div class="slikaj-warning">
+          ⚠️ Besedilo, prebrano s slike, je lahko mestoma nepopolno. Preden ga uporabiš, ga preberi in po potrebi popravi.
+        </div>
+        <div class="panel-title">Prebrano besedilo (po potrebi popravi):</div>
+        <textarea class="paste-area" id="slikajBesedilo" style="min-height:280px;"></textarea>
+        <div class="action-row" style="margin-top:16px;">
+          <button class="btn-primary" onclick="slikajOdpriVBralniku()">📖 Odpri v bralniku</button>
+          <button class="btn-secondary" onclick="slikajPokaziSnovDialog()">🎒 Shrani v šolsko snov</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dialog: shrani v šolsko snov -->
+    <div id="slikajSnovDialog" style="display:none;">
+      <div class="panel" style="border:2px solid var(--accent); margin-top:8px;">
+        <div class="panel-title">🎒 Shrani v šolsko snov</div>
+
+        <!-- Korak 1: Šola -->
+        <div id="ssStep1">
+          <p style="margin-bottom:16px;font-size:.95rem;color:#666;">Izberi vrsto šole:</p>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;">
+            <button class="btn-primary"   onclick="ssIzberiSolo('osnovna')">🏫 Osnovna šola</button>
+            <button class="btn-secondary" onclick="ssIzberiSolo('srednja')">🎓 Srednja šola</button>
+          </div>
+        </div>
+
+        <!-- Korak 2: Razred -->
+        <div id="ssStep2" style="display:none;">
+          <div class="snov-breadcrumb" id="ssBreadcrumb2"></div>
+          <p style="margin-bottom:12px;font-size:.95rem;color:#666;">Izberi razred / letnik:</p>
+          <div id="ssRazredList" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+
+        <!-- Korak 3: Predmet -->
+        <div id="ssStep3" style="display:none;">
+          <div class="snov-breadcrumb" id="ssBreadcrumb3"></div>
+          <p style="margin-bottom:12px;font-size:.95rem;color:#666;">Izberi predmet:</p>
+          <div id="ssPredmetList" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+
+        <!-- Korak 4: Tema -->
+        <div id="ssStep4" style="display:none;">
+          <div class="snov-breadcrumb" id="ssBreadcrumb4"></div>
+          <p style="margin-bottom:12px;font-size:.95rem;color:#666;">Izberi temo:</p>
+          <div id="ssTemaList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+          <button class="btn-secondary" onclick="ssNovaTema()">+ Ustvari novo temo</button>
+        </div>
+
+        <!-- Korak 5: Naslov in shrani -->
+        <div id="ssStep5" style="display:none;">
+          <div class="snov-breadcrumb" id="ssBreadcrumb5"></div>
+          <p style="margin-bottom:12px;font-size:.95rem;color:#666;">Vnesite naslov besedila:</p>
+          <input type="text" id="ssNaslovInput" placeholder="Npr. Poglavje 3, Rimljani …"
+            style="width:100%;padding:12px 14px;font-size:1rem;font-family:inherit;border:2px solid #ccc;border-radius:10px;margin-bottom:16px;background:#fff;color:var(--text);" />
+          <div class="action-row">
+            <button class="btn-primary" onclick="ssShrani()">💾 Shrani</button>
+            <button class="btn-secondary" onclick="ssZapri()">Prekliči</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /screen-slikaj -->
 
 </div><!-- /app-wrap -->
 
@@ -2457,6 +2614,226 @@ Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih be
     tema.besedila = tema.besedila.filter(x => x.id !== id);
     setSnovData(data);
     renderSnovBesedila();
+  }
+
+  // ══════════════════════════════════════════════
+  // ── Slikaj stran ──
+  // ══════════════════════════════════════════════
+
+  function handleSlikajFile(event) {
+    const file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+
+    // Skrij prejšnje rezultate/napake
+    document.getElementById('slikajResultWrap').style.display = 'none';
+    document.getElementById('slikajError').classList.remove('visible');
+    document.getElementById('slikajError').textContent = '';
+    ssZapri();
+
+    // Pretvori v base64
+    const reader = new FileReader();
+    reader.onload = async function (e) {
+      const dataUrl = e.target.result;
+      // dataUrl = "data:image/jpeg;base64,XXXX..."
+      const comma = dataUrl.indexOf(',');
+      const base64 = dataUrl.substring(comma + 1);
+      const mediaType = file.type || 'image/jpeg';
+
+      document.getElementById('slikajLoading').classList.add('visible');
+
+      try {
+        const resp = await fetch(SUPABASE_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({ slika: base64, mediaType }),
+        });
+
+        if (!resp.ok) {
+          const txt = await resp.text().catch(() => '');
+          throw new Error('Strežnik je vrnil napako ' + resp.status + (txt ? ': ' + txt : ''));
+        }
+
+        const data = await resp.json();
+
+        let rezultat = data.rezultat || data.result || data.odgovor || '';
+        if (!rezultat) {
+          const raw = data.text || data.content || '';
+          if (Array.isArray(raw)) {
+            rezultat = raw.filter(b => b.type === 'text').map(b => b.text).join('\n');
+          } else {
+            rezultat = raw;
+          }
+        }
+        if (!rezultat) throw new Error('Strežnik ni vrnil besedila.');
+
+        document.getElementById('slikajBesedilo').value = rezultat;
+        document.getElementById('slikajResultWrap').style.display = 'block';
+      } catch (err) {
+        const errEl = document.getElementById('slikajError');
+        errEl.textContent = 'Napaka pri branju slike: ' + err.message;
+        errEl.classList.add('visible');
+      } finally {
+        document.getElementById('slikajLoading').classList.remove('visible');
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function slikajOdpriVBralniku() {
+    const txt = document.getElementById('slikajBesedilo').value.trim();
+    if (!txt) return;
+    setReaderText(txt);
+    showScreen('screen-reader');
+  }
+
+  function slikajPokaziSnovDialog() {
+    const txt = document.getElementById('slikajBesedilo').value.trim();
+    if (!txt) { alert('Najprej preberi besedilo s slike.'); return; }
+    document.getElementById('slikajSnovDialog').style.display = 'block';
+    ssPokaziKorak(1);
+  }
+
+  function ssZapri() {
+    document.getElementById('slikajSnovDialog').style.display = 'none';
+    _ssReset();
+  }
+
+  // ── Stanje za SS (shrani-v-snov) dialog ──
+  let _ssSola = null, _ssRazred = null, _ssPredmetId = null, _ssTemaId = null;
+
+  function _ssReset() {
+    _ssSola = null; _ssRazred = null; _ssPredmetId = null; _ssTemaId = null;
+    [1,2,3,4,5].forEach(n => document.getElementById('ssStep'+n).style.display = 'none');
+  }
+
+  function ssPokaziKorak(n) {
+    [1,2,3,4,5].forEach(i => document.getElementById('ssStep'+i).style.display = 'none');
+    document.getElementById('ssStep'+n).style.display = 'block';
+  }
+
+  function ssIzberiSolo(tip) {
+    _ssSola = tip;
+    const jeOs = tip === 'osnovna';
+    document.getElementById('ssBreadcrumb2').innerHTML =
+      '<span>' + (jeOs ? 'Osnovna šola' : 'Srednja šola') + '</span>';
+    const list = document.getElementById('ssRazredList');
+    list.innerHTML = '';
+    const stevilo = jeOs ? 9 : 4;
+    for (let i = 1; i <= stevilo; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'snov-select-btn';
+      btn.innerHTML = (jeOs ? '🏫' : '🎓') + ' &nbsp;' + i + (jeOs ? '. razred' : '. letnik');
+      btn.dataset.r = i;
+      btn.addEventListener('click', function() { ssIzberiRazred(this.dataset.r); });
+      list.appendChild(btn);
+    }
+    ssPokaziKorak(2);
+  }
+
+  function ssIzberiRazred(r) {
+    _ssRazred = String(r);
+    const jeOs = _ssSola === 'osnovna';
+    const oznaka = r + (jeOs ? '. razred' : '. letnik');
+    // Zagotovi, da podatki obstajajo (klic getSnovRazredData zahteva globalne spremenljivke)
+    const prevSola = snovAktivnaSola, prevRazred = snovAktivniRazred;
+    snovAktivnaSola = _ssSola; snovAktivniRazred = _ssRazred;
+    getSnovRazredData();
+    snovAktivnaSola = prevSola; snovAktivniRazred = prevRazred;
+
+    const data = getSnovData();
+    const razred = data[_ssSola][_ssRazred];
+    document.getElementById('ssBreadcrumb3').innerHTML =
+      '<span>' + (jeOs ? 'Osnovna šola' : 'Srednja šola') + '</span> › <span>' + oznaka + '</span>';
+    const list = document.getElementById('ssPredmetList');
+    list.innerHTML = '';
+    (razred.predmeti || []).forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'snov-select-btn';
+      btn.innerHTML = snovIkona(p.ime) + ' &nbsp;' + escHtml(p.ime);
+      btn.dataset.id = p.id;
+      btn.addEventListener('click', function() { ssIzberiPredmet(parseInt(this.dataset.id)); });
+      list.appendChild(btn);
+    });
+    ssPokaziKorak(3);
+  }
+
+  function ssIzberiPredmet(id) {
+    _ssPredmetId = id;
+    const data = getSnovData();
+    const razred = data[_ssSola][_ssRazred];
+    const predmet = (razred.predmeti || []).find(p => p.id === id);
+    if (!predmet) return;
+    const jeOs = _ssSola === 'osnovna';
+    const oznaka = _ssRazred + (jeOs ? '. razred' : '. letnik');
+    document.getElementById('ssBreadcrumb4').innerHTML =
+      '<span>' + (jeOs ? 'Osnovna šola' : 'Srednja šola') + '</span> › <span>' + oznaka + '</span> › <span>' + escHtml(predmet.ime) + '</span>';
+    const list = document.getElementById('ssTemaList');
+    list.innerHTML = '';
+    const teme = predmet.teme || [];
+    if (!teme.length) {
+      list.innerHTML = '<p style="color:#888;font-size:.95rem;">Ni tem. Ustvari novo spodaj.</p>';
+    }
+    teme.forEach(t => {
+      const btn = document.createElement('button');
+      btn.className = 'snov-select-btn';
+      btn.innerHTML = '📂 &nbsp;' + escHtml(t.ime);
+      btn.dataset.id = t.id;
+      btn.addEventListener('click', function() { ssIzberiTemo(parseInt(this.dataset.id)); });
+      list.appendChild(btn);
+    });
+    ssPokaziKorak(4);
+  }
+
+  function ssNovaTema() {
+    const ime = prompt('Ime nove teme (npr. Rimljani, Fotosinteza …):');
+    if (!ime || !ime.trim()) return;
+    const data = getSnovData();
+    const predmet = (data[_ssSola][_ssRazred].predmeti || []).find(p => p.id === _ssPredmetId);
+    if (!predmet) return;
+    if (!predmet.teme) predmet.teme = [];
+    const novaId = Date.now();
+    predmet.teme.push({ id: novaId, ime: ime.trim(), besedila: [] });
+    setSnovData(data);
+    ssIzberiTemo(novaId);
+  }
+
+  function ssIzberiTemo(id) {
+    _ssTemaId = id;
+    const data = getSnovData();
+    const predmet = (data[_ssSola][_ssRazred].predmeti || []).find(p => p.id === _ssPredmetId);
+    const tema = (predmet && predmet.teme || []).find(t => t.id === id);
+    if (!tema) return;
+    const jeOs = _ssSola === 'osnovna';
+    const oznaka = _ssRazred + (jeOs ? '. razred' : '. letnik');
+    document.getElementById('ssBreadcrumb5').innerHTML =
+      '<span>' + (jeOs ? 'Osnovna šola' : 'Srednja šola') + '</span> › <span>' + oznaka + '</span> › <span>' + escHtml(predmet.ime) + '</span> › <span>' + escHtml(tema.ime) + '</span>';
+    document.getElementById('ssNaslovInput').value = '';
+    ssPokaziKorak(5);
+    document.getElementById('ssNaslovInput').focus();
+  }
+
+  function ssShrani() {
+    const vsebina = document.getElementById('slikajBesedilo').value.trim();
+    if (!vsebina) { alert('Besedilo je prazno.'); return; }
+    const naslov = document.getElementById('ssNaslovInput').value.trim() || vsebina.slice(0, 50);
+    const data = getSnovData();
+    const predmet = (data[_ssSola][_ssRazred].predmeti || []).find(p => p.id === _ssPredmetId);
+    const tema = (predmet && predmet.teme || []).find(t => t.id === _ssTemaId);
+    if (!tema) { alert('Napaka: tema ni bila najdena.'); return; }
+    if (!tema.besedila) tema.besedila = [];
+    tema.besedila.unshift({
+      id: Date.now(),
+      naslov,
+      vsebina,
+      datum: new Date().toLocaleDateString('sl-SI'),
+    });
+    setSnovData(data);
+    ssZapri();
+    alert('Besedilo je shranjeno v šolsko snov! ✅');
   }
 
   // ── Demo besedilo ──
