@@ -868,6 +868,90 @@
       color: var(--text);
     }
 
+    /* ── Moja šolska snov ── */
+    .snov-breadcrumb {
+      font-size: .88rem;
+      color: #888;
+      margin-bottom: 20px;
+      font-weight: 600;
+      letter-spacing: .02em;
+    }
+    .snov-breadcrumb span { color: var(--accent); }
+
+    .snov-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .snov-item {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color .2s, transform .15s;
+    }
+    .snov-item:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+    .snov-item-icon { font-size: 1.6rem; flex-shrink: 0; }
+
+    .snov-item-info { flex: 1; overflow: hidden; }
+    .snov-item-name {
+      font-weight: 700;
+      font-size: 1.05rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .snov-item-meta { font-size: .82rem; color: #888; margin-top: 2px; }
+
+    .snov-item-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .snov-btn-add {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 28px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 30px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+      margin-bottom: 8px;
+    }
+    .snov-btn-add:hover { background: var(--accent-hover); }
+
+    .snov-empty {
+      text-align: center;
+      color: #888;
+      font-size: 1rem;
+      margin: 30px 0;
+    }
+
+    .icon-btn.rename {
+      background: none;
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    .icon-btn.rename:hover { background: var(--accent); color: #fff; }
+
+    body.dark-theme .snov-item { background: #2a2a40; }
+    body.dark-theme #snovBesediloNaslov { background: #2a2a40; color: #e8e8f0; border-color: #444; }
+
     /* ── Responsive ── */
     @media (max-width: 560px) {
       .reader-box { padding: 20px 18px; }
@@ -879,6 +963,7 @@
       .kartice-grid { grid-template-columns: 1fr 1fr; }
       .tezka-beseda { flex-direction: column; gap: 4px; }
       .tezka-beseda-ime { min-width: unset; }
+      .snov-item-actions { flex-direction: column; gap: 6px; }
     }
   </style>
 </head>
@@ -918,6 +1003,11 @@
       <button class="home-btn secondary" onclick="showScreen('screen-ponavljanje')">
         <span class="btn-icon">🔁</span>
         Ponavljanje
+      </button>
+
+      <button class="home-btn secondary" onclick="showScreen('screen-snov-predmeti')">
+        <span class="btn-icon">🎒</span>
+        Moja šolska snov
       </button>
 
       <button class="home-btn disabled" disabled>
@@ -1157,6 +1247,56 @@
     </div>
   </div><!-- /screen-ponavljanje -->
 
+  <!-- ══════════════ MOJA ŠOLSKA SNOV – PREDMETI ══════════════ -->
+  <div class="screen" id="screen-snov-predmeti">
+    <button class="back-btn" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+
+    <div class="panel">
+      <div class="panel-title">🎒 Moja šolska snov</div>
+      <p style="font-size:.9rem; color:#888; margin-bottom:20px;">Izberi predmet ali dodaj novega.</p>
+      <button class="snov-btn-add" onclick="snovDodajPredmet()">+ Dodaj predmet</button>
+      <div id="snovPredmetiList" class="snov-list"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MOJA ŠOLSKA SNOV – TEME ══════════════ -->
+  <div class="screen" id="screen-snov-teme">
+    <button class="back-btn" onclick="showScreen('screen-snov-predmeti')">← Nazaj na predmete</button>
+
+    <div class="panel">
+      <div class="panel-title" id="snovTemePanelTitle">Teme</div>
+      <div class="snov-breadcrumb" id="snovTemeBreadcrumb"></div>
+      <button class="snov-btn-add" onclick="snovDodajTemo()">+ Dodaj temo</button>
+      <div id="snovTemeList" class="snov-list"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MOJA ŠOLSKA SNOV – BESEDILA ══════════════ -->
+  <div class="screen" id="screen-snov-besedila">
+    <button class="back-btn" onclick="showScreen('screen-snov-teme')">← Nazaj na teme</button>
+
+    <div class="panel">
+      <div class="panel-title" id="snovBesedilaPanelTitle">Besedila</div>
+      <div class="snov-breadcrumb" id="snovBesedilaBreadcrumb"></div>
+      <button class="snov-btn-add" onclick="snovToggleVnosBesedila(true)">+ Dodaj besedilo</button>
+
+      <!-- Vnos novega besedila -->
+      <div id="snovVnosWrap" style="display:none; margin-bottom:20px;">
+        <div class="panel" style="margin-bottom:0; box-shadow:none; border:2px solid var(--accent);">
+          <div class="panel-title">Novo besedilo</div>
+          <input type="text" id="snovBesediloNaslov" placeholder="Naslov besedila (npr. Poglavje 1)" style="width:100%; padding:12px 14px; font-size:1rem; font-family:inherit; border:2px solid #ccc; border-radius:10px; margin-bottom:12px; background:#fff; color:var(--text);" />
+          <textarea id="snovBesediloVsebina" class="paste-area" style="margin-bottom:12px;" placeholder="Sem prilepi ali vtipkaj besedilo …"></textarea>
+          <div class="action-row">
+            <button class="btn-primary" onclick="snovShraniBesedilo()">Shrani</button>
+            <button class="btn-secondary" onclick="snovToggleVnosBesedila(false)">Prekliči</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="snovBesedilaList" class="snov-list"></div>
+    </div>
+  </div>
+
 </div><!-- /app-wrap -->
 
 <script>
@@ -1166,6 +1306,9 @@
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     if (id === 'screen-saved') renderSavedList();
+    if (id === 'screen-snov-predmeti') renderSnovPredmeti();
+    if (id === 'screen-snov-teme') renderSnovTeme();
+    if (id === 'screen-snov-besedila') renderSnovBesedila();
   }
 
   // ── Color definitions ──
@@ -1921,6 +2064,309 @@ Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih be
     const indeksi = [...napacneIndeksi];
     napacneIndeksi = [];
     renderKviz(indeksi);
+  }
+
+  // ══════════════════════════════════════════════
+  // ── Moja šolska snov ──
+  // ══════════════════════════════════════════════
+
+  const SNOV_KEY = 'ucni_most_snov';
+  const DEFAULT_PREDMETI = ['Slovenščina','Matematika','Zgodovina','Geografija','Biologija','Naravoslovje','Angleščina'];
+  const PREDMET_IKONE = { 'Slovenščina':'📝','Matematika':'🔢','Zgodovina':'🏛️','Geografija':'🌍','Biologija':'🌿','Naravoslovje':'🔬','Angleščina':'🇬🇧' };
+
+  let snovAktivniPredmetId = null;
+  let snovAktivnaTemaId    = null;
+
+  function getSnovData() {
+    try { return JSON.parse(localStorage.getItem(SNOV_KEY) || 'null'); }
+    catch { return null; }
+  }
+
+  function setSnovData(data) {
+    localStorage.setItem(SNOV_KEY, JSON.stringify(data));
+  }
+
+  function initSnovData() {
+    let data = getSnovData();
+    if (!data) {
+      data = { predmeti: DEFAULT_PREDMETI.map((ime, i) => ({ id: Date.now() + i, ime, teme: [] })) };
+      setSnovData(data);
+    }
+    return data;
+  }
+
+  function snovIkona(ime) {
+    return PREDMET_IKONE[ime] || '📚';
+  }
+
+  // ── Predmeti ──
+
+  function renderSnovPredmeti() {
+    const data = initSnovData();
+    const list = document.getElementById('snovPredmetiList');
+    list.innerHTML = '';
+    if (!data.predmeti.length) {
+      list.innerHTML = '<p class="snov-empty">Ni predmetov. Dodajte prvega!</p>';
+      return;
+    }
+    data.predmeti.forEach(p => {
+      const el = document.createElement('div');
+      el.className = 'snov-item';
+      const temeCount = p.teme ? p.teme.length : 0;
+      el.innerHTML = `
+        <div class="snov-item-icon">${snovIkona(p.ime)}</div>
+        <div class="snov-item-info" style="cursor:pointer;" data-id="${p.id}">
+          <div class="snov-item-name">${escHtml(p.ime)}</div>
+          <div class="snov-item-meta">${temeCount} ${temeCount === 1 ? 'tema' : temeCount >= 2 && temeCount <= 4 ? 'teme' : 'tem'}</div>
+        </div>
+        <div class="snov-item-actions">
+          <button class="icon-btn rename" data-id="${p.id}">Preimenuj</button>
+          <button class="icon-btn del" data-id="${p.id}">Izbriši</button>
+        </div>`;
+      el.querySelector('.snov-item-info').addEventListener('click', function() {
+        snovAktivniPredmetId = parseInt(this.dataset.id);
+        renderSnovTeme();
+        showScreen('screen-snov-teme');
+      });
+      el.querySelector('.icon-btn.rename').addEventListener('click', function(e) {
+        e.stopPropagation();
+        snovPreimenujPredmet(parseInt(this.dataset.id));
+      });
+      el.querySelector('.icon-btn.del').addEventListener('click', function(e) {
+        e.stopPropagation();
+        snovIzbrisiPredmet(parseInt(this.dataset.id));
+      });
+      list.appendChild(el);
+    });
+  }
+
+  function snovDodajPredmet() {
+    const ime = prompt('Vnesite ime novega predmeta:');
+    if (!ime || !ime.trim()) return;
+    const data = initSnovData();
+    data.predmeti.push({ id: Date.now(), ime: ime.trim(), teme: [] });
+    setSnovData(data);
+    renderSnovPredmeti();
+  }
+
+  function snovPreimenujPredmet(id) {
+    const data = initSnovData();
+    const p = data.predmeti.find(x => x.id === id);
+    if (!p) return;
+    const novoIme = prompt('Novo ime predmeta:', p.ime);
+    if (!novoIme || !novoIme.trim()) return;
+    p.ime = novoIme.trim();
+    setSnovData(data);
+    renderSnovPredmeti();
+  }
+
+  function snovIzbrisiPredmet(id) {
+    if (!confirm('Ali res želite izbrisati ta predmet in vse teme ter besedila v njem?')) return;
+    const data = initSnovData();
+    data.predmeti = data.predmeti.filter(x => x.id !== id);
+    setSnovData(data);
+    renderSnovPredmeti();
+  }
+
+  // ── Teme ──
+
+  function renderSnovTeme() {
+    const data = initSnovData();
+    const predmet = data.predmeti.find(p => p.id === snovAktivniPredmetId);
+    if (!predmet) return;
+
+    document.getElementById('snovTemePanelTitle').textContent = '📚 ' + predmet.ime + ' – Teme';
+    document.getElementById('snovTemeBreadcrumb').innerHTML = '<span>' + escHtml(predmet.ime) + '</span>';
+
+    const list = document.getElementById('snovTemeList');
+    list.innerHTML = '';
+    const teme = predmet.teme || [];
+    if (!teme.length) {
+      list.innerHTML = '<p class="snov-empty">Ni tem. Dodajte prvo temo!</p>';
+      return;
+    }
+    teme.forEach(t => {
+      const el = document.createElement('div');
+      el.className = 'snov-item';
+      const bCount = t.besedila ? t.besedila.length : 0;
+      el.innerHTML = `
+        <div class="snov-item-icon">📂</div>
+        <div class="snov-item-info" style="cursor:pointer;" data-id="${t.id}">
+          <div class="snov-item-name">${escHtml(t.ime)}</div>
+          <div class="snov-item-meta">${bCount} ${bCount === 1 ? 'besedilo' : 'besedil'}</div>
+        </div>
+        <div class="snov-item-actions">
+          <button class="icon-btn rename" data-id="${t.id}">Preimenuj</button>
+          <button class="icon-btn del" data-id="${t.id}">Izbriši</button>
+        </div>`;
+      el.querySelector('.snov-item-info').addEventListener('click', function() {
+        snovAktivnaTemaId = parseInt(this.dataset.id);
+        renderSnovBesedila();
+        showScreen('screen-snov-besedila');
+      });
+      el.querySelector('.icon-btn.rename').addEventListener('click', function(e) {
+        e.stopPropagation();
+        snovPreimenujTemo(parseInt(this.dataset.id));
+      });
+      el.querySelector('.icon-btn.del').addEventListener('click', function(e) {
+        e.stopPropagation();
+        snovIzbrisiTemo(parseInt(this.dataset.id));
+      });
+      list.appendChild(el);
+    });
+  }
+
+  function snovDodajTemo() {
+    const ime = prompt('Vnesite ime nove teme (npr. Rimljani, Fotosinteza …):');
+    if (!ime || !ime.trim()) return;
+    const data = initSnovData();
+    const predmet = data.predmeti.find(p => p.id === snovAktivniPredmetId);
+    if (!predmet) return;
+    if (!predmet.teme) predmet.teme = [];
+    predmet.teme.push({ id: Date.now(), ime: ime.trim(), besedila: [] });
+    setSnovData(data);
+    renderSnovTeme();
+  }
+
+  function snovPreimenujTemo(id) {
+    const data = initSnovData();
+    const predmet = data.predmeti.find(p => p.id === snovAktivniPredmetId);
+    if (!predmet) return;
+    const t = predmet.teme.find(x => x.id === id);
+    if (!t) return;
+    const novoIme = prompt('Novo ime teme:', t.ime);
+    if (!novoIme || !novoIme.trim()) return;
+    t.ime = novoIme.trim();
+    setSnovData(data);
+    renderSnovTeme();
+  }
+
+  function snovIzbrisiTemo(id) {
+    if (!confirm('Ali res želite izbrisati to temo in vsa besedila v njej?')) return;
+    const data = initSnovData();
+    const predmet = data.predmeti.find(p => p.id === snovAktivniPredmetId);
+    if (!predmet) return;
+    predmet.teme = predmet.teme.filter(x => x.id !== id);
+    setSnovData(data);
+    renderSnovTeme();
+  }
+
+  // ── Besedila ──
+
+  function renderSnovBesedila() {
+    const data = initSnovData();
+    const predmet = data.predmeti.find(p => p.id === snovAktivniPredmetId);
+    if (!predmet) return;
+    const tema = predmet.teme.find(t => t.id === snovAktivnaTemaId);
+    if (!tema) return;
+
+    document.getElementById('snovBesedilaPanelTitle').textContent = '📄 ' + tema.ime;
+    document.getElementById('snovBesedilaBreadcrumb').innerHTML =
+      '<span>' + escHtml(predmet.ime) + '</span> &rsaquo; <span>' + escHtml(tema.ime) + '</span>';
+
+    snovToggleVnosBesedila(false);
+
+    const list = document.getElementById('snovBesedilaList');
+    list.innerHTML = '';
+    const besedila = tema.besedila || [];
+    if (!besedila.length) {
+      list.innerHTML = '<p class="snov-empty">Ni besedil. Dodajte prvo!</p>';
+      return;
+    }
+    besedila.forEach(b => {
+      const el = document.createElement('div');
+      el.className = 'snov-item';
+      el.innerHTML = `
+        <div class="snov-item-icon">📃</div>
+        <div class="snov-item-info">
+          <div class="snov-item-name">${escHtml(b.naslov || b.vsebina.slice(0,50))}</div>
+          <div class="snov-item-meta">${b.datum} · ${b.vsebina.length} znakov</div>
+        </div>
+        <div class="snov-item-actions">
+          <button class="icon-btn open" data-id="${b.id}">Odpri</button>
+          <button class="icon-btn rename" data-id="${b.id}">Preimenuj</button>
+          <button class="icon-btn del" data-id="${b.id}">Izbriši</button>
+        </div>`;
+      el.querySelector('.icon-btn.open').addEventListener('click', function() {
+        const item = snovGetBesedilo(parseInt(this.dataset.id));
+        if (item) { setReaderText(item.vsebina); showScreen('screen-reader'); }
+      });
+      el.querySelector('.icon-btn.rename').addEventListener('click', function() {
+        snovPreimenujBesedilo(parseInt(this.dataset.id));
+      });
+      el.querySelector('.icon-btn.del').addEventListener('click', function() {
+        snovIzbrisiB(parseInt(this.dataset.id));
+      });
+      list.appendChild(el);
+    });
+  }
+
+  function snovGetBesedilo(id) {
+    const data = initSnovData();
+    const predmet = data.predmeti.find(p => p.id === snovAktivniPredmetId);
+    if (!predmet) return null;
+    const tema = predmet.teme.find(t => t.id === snovAktivnaTemaId);
+    if (!tema) return null;
+    return tema.besedila.find(b => b.id === id) || null;
+  }
+
+  function snovToggleVnosBesedila(show) {
+    document.getElementById('snovVnosWrap').style.display = show ? 'block' : 'none';
+    if (show) {
+      document.getElementById('snovBesediloNaslov').value = '';
+      document.getElementById('snovBesediloVsebina').value = '';
+      document.getElementById('snovBesediloNaslov').focus();
+    }
+  }
+
+  function snovShraniBesedilo() {
+    const naslov = document.getElementById('snovBesediloNaslov').value.trim();
+    const vsebina = document.getElementById('snovBesediloVsebina').value.trim();
+    if (!vsebina) { alert('Besedilo ne sme biti prazno.'); return; }
+
+    const data = initSnovData();
+    const predmet = data.predmeti.find(p => p.id === snovAktivniPredmetId);
+    if (!predmet) return;
+    const tema = predmet.teme.find(t => t.id === snovAktivnaTemaId);
+    if (!tema) return;
+    if (!tema.besedila) tema.besedila = [];
+
+    tema.besedila.unshift({
+      id: Date.now(),
+      naslov: naslov || vsebina.slice(0, 50),
+      vsebina,
+      datum: new Date().toLocaleDateString('sl-SI'),
+    });
+    setSnovData(data);
+    snovToggleVnosBesedila(false);
+    renderSnovBesedila();
+  }
+
+  function snovPreimenujBesedilo(id) {
+    const data = initSnovData();
+    const predmet = data.predmeti.find(p => p.id === snovAktivniPredmetId);
+    if (!predmet) return;
+    const tema = predmet.teme.find(t => t.id === snovAktivnaTemaId);
+    if (!tema) return;
+    const b = tema.besedila.find(x => x.id === id);
+    if (!b) return;
+    const novoIme = prompt('Nov naslov besedila:', b.naslov);
+    if (!novoIme || !novoIme.trim()) return;
+    b.naslov = novoIme.trim();
+    setSnovData(data);
+    renderSnovBesedila();
+  }
+
+  function snovIzbrisiB(id) {
+    if (!confirm('Ali res želite izbrisati to besedilo?')) return;
+    const data = initSnovData();
+    const predmet = data.predmeti.find(p => p.id === snovAktivniPredmetId);
+    if (!predmet) return;
+    const tema = predmet.teme.find(t => t.id === snovAktivnaTemaId);
+    if (!tema) return;
+    tema.besedila = tema.besedila.filter(x => x.id !== id);
+    setSnovData(data);
+    renderSnovBesedila();
   }
 
   // ── Demo besedilo ──
