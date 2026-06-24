@@ -457,6 +457,12 @@
     }
     body.dark-theme .tts-note { color: #777; }
 
+    /* ── TTS loading stanje ── */
+    .tts-btn.loading {
+      opacity: .7;
+      cursor: default;
+    }
+
     /* ── TTS word highlight ── */
     .tts-word { display: inline; }
     .tts-word.tts-active {
@@ -1043,7 +1049,7 @@
         </div>
       </div>
 
-      <p class="tts-note">Začasni glas — kasneje ga zamenjamo z naravnim slovenskim glasom.</p>
+      <p class="tts-note">Naravni slovenski glas prek ElevenLabs. Ob napaki se samodejno preklopi na glas brskalnika.</p>
     </div>
 
     <!-- Reader box -->
@@ -1334,21 +1340,21 @@
   }
 
   // ══════════════════════════════════════════════
-  // ── Branje na glas (Web Speech API) ──
+  // ── Branje na glas (ElevenLabs + rezerva brskalnik) ──
   // ══════════════════════════════════════════════
 
-  let ttsState = 'stopped'; // 'stopped' | 'playing' | 'paused'
+  let ttsState = 'stopped'; // 'stopped' | 'loading' | 'playing' | 'paused'
+  let ttsAudio  = null;     // HTML Audio element (ElevenLabs)
+  let ttsAudioUrl = null;   // blob URL za sprostitev
+  let ttsAbort  = null;     // AbortController za preklic nalaganja
   let ttsUtteranceText = '';
-  let ttsWordSpans = []; // [{ el, start }] sorted by start
+  let ttsWordSpans = [];
 
-  // Wrap every word in readerBox in a <span class="tts-word"> with data-start
+  // Besede v readerBox zavijemo v <span class="tts-word"> (za morebitno označevanje)
   function wrapWordsForTTS() {
     const box = document.getElementById('readerBox');
-
-    // Unwrap any previous spans and normalise
     box.querySelectorAll('.tts-word').forEach(span => {
-      const t = document.createTextNode(span.textContent);
-      span.parentNode.replaceChild(t, span);
+      span.parentNode.replaceChild(document.createTextNode(span.textContent), span);
     });
     box.normalize();
 
@@ -1364,9 +1370,7 @@
     textNodes.forEach(textNode => {
       const text = textNode.textContent;
       const frag = document.createDocumentFragment();
-      const tokens = text.split(/(\s+)/);
-
-      tokens.forEach(token => {
+      text.split(/(\s+)/).forEach(token => {
         if (!token) return;
         if (/\S/.test(token)) {
           const span = document.createElement('span');
@@ -1381,26 +1385,10 @@
         utterance += token;
         offset += token.length;
       });
-
       textNode.parentNode.replaceChild(frag, textNode);
     });
 
     ttsUtteranceText = utterance.trim();
-  }
-
-  function highlightWord(charIndex) {
-    document.querySelectorAll('.tts-word.tts-active').forEach(el => el.classList.remove('tts-active'));
-    let found = null;
-    for (let i = ttsWordSpans.length - 1; i >= 0; i--) {
-      if (ttsWordSpans[i].start <= charIndex) {
-        found = ttsWordSpans[i];
-        break;
-      }
-    }
-    if (found) {
-      found.el.classList.add('tts-active');
-      found.el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    }
   }
 
   function clearHighlight() {
@@ -1408,83 +1396,155 @@
   }
 
   function updateTTSButtons() {
-    document.getElementById('btnPlay').disabled  = ttsState === 'playing';
-    document.getElementById('btnPause').disabled = ttsState !== 'playing';
-    document.getElementById('btnStop').disabled  = ttsState === 'stopped';
+    const btnPlay  = document.getElementById('btnPlay');
+    const btnPause = document.getElementById('btnPause');
+    const btnStop  = document.getElementById('btnStop');
+    const loading  = ttsState === 'loading';
+    const playing  = ttsState === 'playing';
+    const stopped  = ttsState === 'stopped';
+
+    btnPlay.disabled  = playing || loading;
+    btnPause.disabled = !playing;
+    btnStop.disabled  = stopped;
+
+    if (loading) {
+      btnPlay.classList.add('loading');
+      btnPlay.textContent = '⏳ Nalaganje…';
+    } else {
+      btnPlay.classList.remove('loading');
+      btnPlay.textContent = '▶ Predvajaj';
+    }
   }
 
-  function playTTS() {
-    if (!('speechSynthesis' in window)) {
-      alert('Vaš brskalnik ne podpira branja na glas. Prosimo, poskusite v Chrome ali Edge.');
-      return;
+  function _freeTtsAudio() {
+    if (ttsAudio) {
+      ttsAudio.pause();
+      ttsAudio.src = '';
+      ttsAudio = null;
     }
+    if (ttsAudioUrl) {
+      URL.revokeObjectURL(ttsAudioUrl);
+      ttsAudioUrl = null;
+    }
+  }
 
-    if (ttsState === 'paused') {
-      window.speechSynthesis.resume();
+  // Skupna ElevenLabs funkcija – vrne Audio element ali vrže napako
+  async function _fetchElevenLabsAudio(tekst, abortSignal) {
+    const resp = await fetch(GOVOR_URL, {
+      method: 'POST',
+      signal: abortSignal,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ besedilo: tekst }),
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const blob = await resp.blob();
+    const url  = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    return { audio, url };
+  }
+
+  // Rezerva – brskalnikov Web Speech API
+  function _browserTTS(tekst, onEnd) {
+    if (!('speechSynthesis' in window)) { onEnd(); return; }
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(tekst);
+    utt.lang = 'sl-SI';
+    utt.rate = parseFloat(document.getElementById('ttsSpeed').value);
+    utt.onend  = onEnd;
+    utt.onerror = onEnd;
+    window.speechSynthesis.speak(utt);
+  }
+
+  async function playTTS() {
+    if (ttsState === 'paused' && ttsAudio) {
+      ttsAudio.playbackRate = parseFloat(document.getElementById('ttsSpeed').value);
+      ttsAudio.play();
       ttsState = 'playing';
       updateTTSButtons();
       return;
     }
+    if (ttsState === 'playing' || ttsState === 'loading') return;
+    if (!ttsUtteranceText) { alert('V bralniku ni besedila za branje.'); return; }
 
-    if (ttsState === 'playing') return;
-
-    window.speechSynthesis.cancel();
-
-    if (!ttsUtteranceText) {
-      alert('V bralniku ni besedila za branje.');
-      return;
-    }
-
-    const utt = new SpeechSynthesisUtterance(ttsUtteranceText);
-    utt.lang = 'sl-SI';
-    utt.rate = parseFloat(document.getElementById('ttsSpeed').value);
-
-    utt.onboundary = function (e) {
-      if (e.name === 'word') highlightWord(e.charIndex);
-    };
-
-    utt.onend = function () {
-      ttsState = 'stopped';
-      clearHighlight();
-      updateTTSButtons();
-    };
-
-    utt.onerror = function () {
-      ttsState = 'stopped';
-      clearHighlight();
-      updateTTSButtons();
-    };
-
-    window.speechSynthesis.speak(utt);
-    ttsState = 'playing';
+    ttsAbort = new AbortController();
+    ttsState = 'loading';
     updateTTSButtons();
+
+    try {
+      const { audio, url } = await _fetchElevenLabsAudio(ttsUtteranceText, ttsAbort.signal);
+      if (ttsState !== 'loading') { URL.revokeObjectURL(url); return; } // prekinjeno med nalaganjem
+
+      _freeTtsAudio();
+      ttsAudio    = audio;
+      ttsAudioUrl = url;
+      ttsAudio.playbackRate = parseFloat(document.getElementById('ttsSpeed').value);
+
+      ttsAudio.onended = () => {
+        ttsState = 'stopped';
+        clearHighlight();
+        _freeTtsAudio();
+        updateTTSButtons();
+      };
+      ttsAudio.onerror = () => {
+        ttsState = 'stopped';
+        clearHighlight();
+        _freeTtsAudio();
+        updateTTSButtons();
+      };
+
+      await ttsAudio.play();
+      ttsState = 'playing';
+      updateTTSButtons();
+    } catch (err) {
+      if (err.name === 'AbortError') { ttsState = 'stopped'; updateTTSButtons(); return; }
+      // Rezerva – brskalnikov glas
+      console.warn('ElevenLabs TTS ni uspel, preklop na brskalnik:', err);
+      ttsState = 'playing';
+      updateTTSButtons();
+      _browserTTS(ttsUtteranceText, () => {
+        ttsState = 'stopped';
+        clearHighlight();
+        updateTTSButtons();
+      });
+    }
   }
 
   function pauseTTS() {
     if (ttsState === 'playing') {
-      window.speechSynthesis.pause();
+      if (ttsAudio) {
+        ttsAudio.pause();
+      } else if ('speechSynthesis' in window) {
+        window.speechSynthesis.pause();
+      }
       ttsState = 'paused';
       updateTTSButtons();
     }
   }
 
   function stopTTS() {
+    if (ttsAbort) { ttsAbort.abort(); ttsAbort = null; }
+    if (ttsAudio) { _freeTtsAudio(); }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     ttsState = 'stopped';
     clearHighlight();
     updateTTSButtons();
   }
 
-  // Speed slider
+  // Hitrost – posodobi predvajanje v živo, če že teče
   document.getElementById('ttsSpeed').addEventListener('input', function () {
     document.getElementById('ttsSpeedVal').textContent = parseFloat(this.value).toFixed(1) + '×';
+    if (ttsAudio) ttsAudio.playbackRate = parseFloat(this.value);
   });
 
   // ══════════════════════════════════════════════
   // ── Razumevanje – AI klici ──
   // ══════════════════════════════════════════════
 
-  const SUPABASE_URL = 'https://qjqdaqanymqlgzlknbas.supabase.co/functions/v1/ai';
+  const SUPABASE_URL      = 'https://qjqdaqanymqlgzlknbas.supabase.co/functions/v1/ai';
+  const GOVOR_URL         = 'https://qjqdaqanymqlgzlknbas.supabase.co/functions/v1/govor';
   const SUPABASE_ANON_KEY = 'TUKAJ_PRILEPI_ANON_KLJUC';
 
   const AI_NAVODILA = {
@@ -1494,8 +1554,10 @@
     split: 'Razdeli besedilo na manjše dele. Vsak del naj ima naslov in kratko razlago v 2–3 stavkih. Uporabi preproste besede. Piši za otroka z disleksijo.',
   };
 
-  let aiTtsUtterance = null;
-  let aiTtsPlaying = false;
+  let aiTtsAudio    = null;
+  let aiTtsAudioUrl = null;
+  let aiTtsAbort    = null;
+  let aiTtsState    = 'stopped'; // 'stopped' | 'loading' | 'playing'
 
   function getReaderText() {
     const box = document.getElementById('readerBox');
@@ -1586,50 +1648,79 @@
   }
 
   function toggleAiTTS() {
-    if (aiTtsPlaying) {
+    if (aiTtsState === 'playing' || aiTtsState === 'loading') {
       stopAiTTS();
     } else {
       playAiTTS();
     }
   }
 
-  function playAiTTS() {
-    if (!('speechSynthesis' in window)) {
-      alert('Vaš brskalnik ne podpira branja na glas.');
-      return;
-    }
+  async function playAiTTS() {
     const txt = document.getElementById('aiResultBox').textContent.trim();
     if (!txt) return;
+    if (aiTtsState === 'playing' || aiTtsState === 'loading') return;
 
-    window.speechSynthesis.cancel();
-    aiTtsUtterance = new SpeechSynthesisUtterance(txt);
-    aiTtsUtterance.lang = 'sl-SI';
-    aiTtsUtterance.rate = 0.9;
-
-    aiTtsUtterance.onend = function () {
-      aiTtsPlaying = false;
-      updateAiTtsBtn();
-    };
-    aiTtsUtterance.onerror = function () {
-      aiTtsPlaying = false;
-      updateAiTtsBtn();
-    };
-
-    window.speechSynthesis.speak(aiTtsUtterance);
-    aiTtsPlaying = true;
+    aiTtsAbort = new AbortController();
+    aiTtsState = 'loading';
     updateAiTtsBtn();
+
+    try {
+      const { audio, url } = await _fetchElevenLabsAudio(txt, aiTtsAbort.signal);
+      if (aiTtsState !== 'loading') { URL.revokeObjectURL(url); return; }
+
+      if (aiTtsAudio) { aiTtsAudio.pause(); aiTtsAudio.src = ''; }
+      if (aiTtsAudioUrl) URL.revokeObjectURL(aiTtsAudioUrl);
+      aiTtsAudio    = audio;
+      aiTtsAudioUrl = url;
+
+      aiTtsAudio.onended = () => {
+        aiTtsState = 'stopped';
+        if (aiTtsAudioUrl) { URL.revokeObjectURL(aiTtsAudioUrl); aiTtsAudioUrl = null; }
+        aiTtsAudio = null;
+        updateAiTtsBtn();
+      };
+      aiTtsAudio.onerror = () => {
+        aiTtsState = 'stopped';
+        updateAiTtsBtn();
+      };
+
+      await aiTtsAudio.play();
+      aiTtsState = 'playing';
+      updateAiTtsBtn();
+    } catch (err) {
+      if (err.name === 'AbortError') { aiTtsState = 'stopped'; updateAiTtsBtn(); return; }
+      // Rezerva – brskalnikov glas
+      console.warn('AI TTS rezerva brskalnik:', err);
+      aiTtsState = 'playing';
+      updateAiTtsBtn();
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utt = new SpeechSynthesisUtterance(txt);
+        utt.lang = 'sl-SI'; utt.rate = 0.9;
+        utt.onend = utt.onerror = () => { aiTtsState = 'stopped'; updateAiTtsBtn(); };
+        window.speechSynthesis.speak(utt);
+      } else {
+        aiTtsState = 'stopped'; updateAiTtsBtn();
+      }
+    }
   }
 
   function stopAiTTS() {
+    if (aiTtsAbort) { aiTtsAbort.abort(); aiTtsAbort = null; }
+    if (aiTtsAudio) { aiTtsAudio.pause(); aiTtsAudio.src = ''; aiTtsAudio = null; }
+    if (aiTtsAudioUrl) { URL.revokeObjectURL(aiTtsAudioUrl); aiTtsAudioUrl = null; }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    aiTtsPlaying = false;
+    aiTtsState = 'stopped';
     updateAiTtsBtn();
   }
 
   function updateAiTtsBtn() {
     const btn = document.getElementById('btnAiTts');
     if (!btn) return;
-    if (aiTtsPlaying) {
+    if (aiTtsState === 'loading') {
+      btn.textContent = '⏳ Nalaganje…';
+      btn.classList.remove('stop');
+    } else if (aiTtsState === 'playing') {
       btn.textContent = '⏹ Ustavi branje';
       btn.classList.add('stop');
     } else {
