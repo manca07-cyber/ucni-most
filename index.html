@@ -1005,7 +1005,7 @@
         Ponavljanje
       </button>
 
-      <button class="home-btn secondary" onclick="showScreen('screen-snov-predmeti')">
+      <button class="home-btn secondary" onclick="showScreen('screen-snov-sola')">
         <span class="btn-icon">🎒</span>
         Moja šolska snov
       </button>
@@ -1247,13 +1247,40 @@
     </div>
   </div><!-- /screen-ponavljanje -->
 
-  <!-- ══════════════ MOJA ŠOLSKA SNOV – PREDMETI ══════════════ -->
-  <div class="screen" id="screen-snov-predmeti">
+  <!-- ══════════════ MOJA ŠOLSKA SNOV – IZBIRA ŠOLE ══════════════ -->
+  <div class="screen" id="screen-snov-sola">
     <button class="back-btn" onclick="showScreen('screen-home')">← Nazaj na domov</button>
-
     <div class="panel">
       <div class="panel-title">🎒 Moja šolska snov</div>
-      <p style="font-size:.9rem; color:#888; margin-bottom:20px;">Izberi predmet ali dodaj novega.</p>
+      <p style="font-size:.95rem; color:#888; margin-bottom:28px; line-height:1.6;">Izberi vrsto šole, nato razred in predmet, da organiziraš svoja besedila.</p>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:18px; max-width:520px;">
+        <button class="home-btn primary" onclick="snovIzberiSolo('osnovna')">
+          <span class="btn-icon">🏫</span>
+          Osnovna šola
+        </button>
+        <button class="home-btn secondary" onclick="snovIzberiSolo('srednja')">
+          <span class="btn-icon">🎓</span>
+          Srednja šola
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MOJA ŠOLSKA SNOV – RAZREDI/LETNIKI ══════════════ -->
+  <div class="screen" id="screen-snov-razredi">
+    <button class="back-btn" onclick="showScreen('screen-snov-sola')">← Nazaj na izbiro šole</button>
+    <div class="panel">
+      <div class="panel-title" id="snovRazretiTitle">Razredi</div>
+      <div id="snovRazrediList" class="snov-list"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MOJA ŠOLSKA SNOV – PREDMETI ══════════════ -->
+  <div class="screen" id="screen-snov-predmeti">
+    <button class="back-btn" onclick="showScreen('screen-snov-razredi')">← Nazaj na razrede</button>
+    <div class="panel">
+      <div class="panel-title" id="snovPredmetiTitle">Predmeti</div>
+      <div class="snov-breadcrumb" id="snovPredmetiBreadcrumb"></div>
       <button class="snov-btn-add" onclick="snovDodajPredmet()">+ Dodaj predmet</button>
       <div id="snovPredmetiList" class="snov-list"></div>
     </div>
@@ -1262,7 +1289,6 @@
   <!-- ══════════════ MOJA ŠOLSKA SNOV – TEME ══════════════ -->
   <div class="screen" id="screen-snov-teme">
     <button class="back-btn" onclick="showScreen('screen-snov-predmeti')">← Nazaj na predmete</button>
-
     <div class="panel">
       <div class="panel-title" id="snovTemePanelTitle">Teme</div>
       <div class="snov-breadcrumb" id="snovTemeBreadcrumb"></div>
@@ -1274,7 +1300,6 @@
   <!-- ══════════════ MOJA ŠOLSKA SNOV – BESEDILA ══════════════ -->
   <div class="screen" id="screen-snov-besedila">
     <button class="back-btn" onclick="showScreen('screen-snov-teme')">← Nazaj na teme</button>
-
     <div class="panel">
       <div class="panel-title" id="snovBesedilaPanelTitle">Besedila</div>
       <div class="snov-breadcrumb" id="snovBesedilaBreadcrumb"></div>
@@ -1306,6 +1331,7 @@
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     if (id === 'screen-saved') renderSavedList();
+    if (id === 'screen-snov-razredi') renderSnovRazredi();
     if (id === 'screen-snov-predmeti') renderSnovPredmeti();
     if (id === 'screen-snov-teme') renderSnovTeme();
     if (id === 'screen-snov-besedila') renderSnovBesedila();
@@ -2070,54 +2096,124 @@ Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih be
   // ── Moja šolska snov ──
   // ══════════════════════════════════════════════
 
-  const SNOV_KEY = 'ucni_most_snov';
-  const DEFAULT_PREDMETI = ['Slovenščina','Matematika','Zgodovina','Geografija','Biologija','Naravoslovje','Angleščina'];
-  const PREDMET_IKONE = { 'Slovenščina':'📝','Matematika':'🔢','Zgodovina':'🏛️','Geografija':'🌍','Biologija':'🌿','Naravoslovje':'🔬','Angleščina':'🇬🇧' };
+  const SNOV_KEY = 'ucni_most_snov_v2';
 
+  const DEFAULT_PREDMETI_OS = {
+    "1": ["Slovenščina","Matematika","Spoznavanje okolja","Likovna umetnost","Glasbena umetnost","Šport"],
+    "2": ["Slovenščina","Matematika","Spoznavanje okolja","Angleščina","Likovna umetnost","Glasbena umetnost","Šport"],
+    "3": ["Slovenščina","Matematika","Spoznavanje okolja","Angleščina","Likovna umetnost","Glasbena umetnost","Šport"],
+    "4": ["Slovenščina","Matematika","Družba","Naravoslovje in tehnika","Angleščina","Likovna umetnost","Glasbena umetnost","Šport"],
+    "5": ["Slovenščina","Matematika","Družba","Naravoslovje in tehnika","Angleščina","Gospodinjstvo","Likovna umetnost","Glasbena umetnost","Šport"],
+    "6": ["Slovenščina","Matematika","Angleščina","Zgodovina","Geografija","Naravoslovje","Tehnika in tehnologija","Gospodinjstvo","Likovna umetnost","Glasbena umetnost","Šport"],
+    "7": ["Slovenščina","Matematika","Angleščina","Zgodovina","Geografija","Domovinska in državljanska kultura in etika","Naravoslovje","Tehnika in tehnologija","Likovna umetnost","Glasbena umetnost","Šport"],
+    "8": ["Slovenščina","Matematika","Angleščina","Zgodovina","Geografija","Domovinska in državljanska kultura in etika","Biologija","Kemija","Fizika","Likovna umetnost","Glasbena umetnost","Šport"],
+    "9": ["Slovenščina","Matematika","Angleščina","Zgodovina","Geografija","Biologija","Kemija","Fizika","Likovna umetnost","Glasbena umetnost","Šport"],
+  };
+
+  const DEFAULT_PREDMETI_SS = {
+    "1": ["Slovenščina","Matematika","Angleščina","Zgodovina","Športna vzgoja"],
+    "2": ["Slovenščina","Matematika","Angleščina","Zgodovina","Športna vzgoja"],
+    "3": ["Slovenščina","Matematika","Angleščina","Zgodovina","Športna vzgoja"],
+    "4": ["Slovenščina","Matematika","Angleščina","Zgodovina","Športna vzgoja"],
+  };
+
+  const PREDMET_IKONE = {
+    'Slovenščina':'📝','Matematika':'🔢','Spoznavanje okolja':'🌱',
+    'Angleščina':'🇬🇧','Likovna umetnost':'🎨','Glasbena umetnost':'🎵',
+    'Šport':'⚽','Naravoslovje in tehnika':'🔧','Naravoslovje':'🔬',
+    'Tehnika in tehnologija':'⚙️','Gospodinjstvo':'🏠','Družba':'🤝',
+    'Zgodovina':'🏛️','Geografija':'🌍',
+    'Domovinska in državljanska kultura in etika':'🏛️',
+    'Biologija':'🌿','Kemija':'⚗️','Fizika':'⚡','Športna vzgoja':'🏃',
+  };
+
+  let snovAktivnaSola      = null; // 'osnovna' | 'srednja'
+  let snovAktivniRazred    = null; // '1'..'9' ali '1'..'4'
   let snovAktivniPredmetId = null;
   let snovAktivnaTemaId    = null;
 
   function getSnovData() {
-    try { return JSON.parse(localStorage.getItem(SNOV_KEY) || 'null'); }
-    catch { return null; }
+    try { return JSON.parse(localStorage.getItem(SNOV_KEY) || '{}'); }
+    catch { return {}; }
   }
+  function setSnovData(data) { localStorage.setItem(SNOV_KEY, JSON.stringify(data)); }
 
-  function setSnovData(data) {
-    localStorage.setItem(SNOV_KEY, JSON.stringify(data));
-  }
-
-  function initSnovData() {
-    let data = getSnovData();
-    if (!data) {
-      data = { predmeti: DEFAULT_PREDMETI.map((ime, i) => ({ id: Date.now() + i, ime, teme: [] })) };
+  function getSnovRazredData() {
+    const data = getSnovData();
+    if (!data[snovAktivnaSola]) data[snovAktivnaSola] = {};
+    if (!data[snovAktivnaSola][snovAktivniRazred]) {
+      const defaults = snovAktivnaSola === 'osnovna'
+        ? (DEFAULT_PREDMETI_OS[snovAktivniRazred] || [])
+        : (DEFAULT_PREDMETI_SS[snovAktivniRazred] || []);
+      const base = Date.now();
+      data[snovAktivnaSola][snovAktivniRazred] = {
+        predmeti: defaults.map((ime, i) => ({ id: base + i, ime, teme: [] }))
+      };
       setSnovData(data);
     }
     return data;
   }
 
-  function snovIkona(ime) {
-    return PREDMET_IKONE[ime] || '📚';
+  function snovIkona(ime) { return PREDMET_IKONE[ime] || '📚'; }
+
+  // ── Izbira šole ──
+  function snovIzberiSolo(tip) {
+    snovAktivnaSola = tip;
+    showScreen('screen-snov-razredi');
+  }
+
+  // ── Razredi / Letniki ──
+  function renderSnovRazredi() {
+    const jeOs = snovAktivnaSola === 'osnovna';
+    document.getElementById('snovRazretiTitle').textContent =
+      jeOs ? '🏫 Osnovna šola – Izberi razred' : '🎓 Srednja šola – Izberi letnik';
+    const list = document.getElementById('snovRazrediList');
+    list.innerHTML = '';
+    const stevilo = jeOs ? 9 : 4;
+    for (let i = 1; i <= stevilo; i++) {
+      const el = document.createElement('div');
+      el.className = 'snov-item';
+      el.style.cursor = 'pointer';
+      const oznaka = jeOs ? `${i}. razred` : `${i}. letnik`;
+      el.innerHTML = `
+        <div class="snov-item-icon">${jeOs ? '🏫' : '🎓'}</div>
+        <div class="snov-item-info">
+          <div class="snov-item-name">${oznaka}</div>
+        </div>
+        <div style="color:var(--accent); font-weight:700; font-size:1.5rem; padding:0 4px;">›</div>`;
+      el.addEventListener('click', () => {
+        snovAktivniRazred = String(i);
+        showScreen('screen-snov-predmeti');
+      });
+      list.appendChild(el);
+    }
   }
 
   // ── Predmeti ──
-
   function renderSnovPredmeti() {
-    const data = initSnovData();
+    const data   = getSnovRazredData();
+    const razred = data[snovAktivnaSola][snovAktivniRazred];
+    const jeOs   = snovAktivnaSola === 'osnovna';
+    const oznaka = jeOs ? `${snovAktivniRazred}. razred` : `${snovAktivniRazred}. letnik`;
+    document.getElementById('snovPredmetiTitle').textContent = `📚 ${oznaka} – Predmeti`;
+    document.getElementById('snovPredmetiBreadcrumb').innerHTML =
+      `<span>${jeOs ? 'Osnovna šola' : 'Srednja šola'}</span> › <span>${oznaka}</span>`;
     const list = document.getElementById('snovPredmetiList');
     list.innerHTML = '';
-    if (!data.predmeti.length) {
+    if (!razred.predmeti.length) {
       list.innerHTML = '<p class="snov-empty">Ni predmetov. Dodajte prvega!</p>';
       return;
     }
-    data.predmeti.forEach(p => {
+    razred.predmeti.forEach(p => {
       const el = document.createElement('div');
       el.className = 'snov-item';
-      const temeCount = p.teme ? p.teme.length : 0;
+      const tc = p.teme ? p.teme.length : 0;
+      const temeTxt = tc === 1 ? 'tema' : tc >= 2 && tc <= 4 ? 'teme' : 'tem';
       el.innerHTML = `
         <div class="snov-item-icon">${snovIkona(p.ime)}</div>
         <div class="snov-item-info" style="cursor:pointer;" data-id="${p.id}">
           <div class="snov-item-name">${escHtml(p.ime)}</div>
-          <div class="snov-item-meta">${temeCount} ${temeCount === 1 ? 'tema' : temeCount >= 2 && temeCount <= 4 ? 'teme' : 'tem'}</div>
+          <div class="snov-item-meta">${tc} ${temeTxt}</div>
         </div>
         <div class="snov-item-actions">
           <button class="icon-btn rename" data-id="${p.id}">Preimenuj</button>
@@ -2125,16 +2221,13 @@ Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih be
         </div>`;
       el.querySelector('.snov-item-info').addEventListener('click', function() {
         snovAktivniPredmetId = parseInt(this.dataset.id);
-        renderSnovTeme();
         showScreen('screen-snov-teme');
       });
       el.querySelector('.icon-btn.rename').addEventListener('click', function(e) {
-        e.stopPropagation();
-        snovPreimenujPredmet(parseInt(this.dataset.id));
+        e.stopPropagation(); snovPreimenujPredmet(parseInt(this.dataset.id));
       });
       el.querySelector('.icon-btn.del').addEventListener('click', function(e) {
-        e.stopPropagation();
-        snovIzbrisiPredmet(parseInt(this.dataset.id));
+        e.stopPropagation(); snovIzbrisiPredmet(parseInt(this.dataset.id));
       });
       list.appendChild(el);
     });
@@ -2143,15 +2236,15 @@ Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih be
   function snovDodajPredmet() {
     const ime = prompt('Vnesite ime novega predmeta:');
     if (!ime || !ime.trim()) return;
-    const data = initSnovData();
-    data.predmeti.push({ id: Date.now(), ime: ime.trim(), teme: [] });
+    const data = getSnovData();
+    data[snovAktivnaSola][snovAktivniRazred].predmeti.push({ id: Date.now(), ime: ime.trim(), teme: [] });
     setSnovData(data);
     renderSnovPredmeti();
   }
 
   function snovPreimenujPredmet(id) {
-    const data = initSnovData();
-    const p = data.predmeti.find(x => x.id === id);
+    const data = getSnovData();
+    const p = data[snovAktivnaSola][snovAktivniRazred].predmeti.find(x => x.id === id);
     if (!p) return;
     const novoIme = prompt('Novo ime predmeta:', p.ime);
     if (!novoIme || !novoIme.trim()) return;
@@ -2162,22 +2255,28 @@ Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih be
 
   function snovIzbrisiPredmet(id) {
     if (!confirm('Ali res želite izbrisati ta predmet in vse teme ter besedila v njem?')) return;
-    const data = initSnovData();
-    data.predmeti = data.predmeti.filter(x => x.id !== id);
+    const data = getSnovData();
+    data[snovAktivnaSola][snovAktivniRazred].predmeti =
+      data[snovAktivnaSola][snovAktivniRazred].predmeti.filter(x => x.id !== id);
     setSnovData(data);
     renderSnovPredmeti();
   }
 
   // ── Teme ──
+  function _snovGetPredmet(data) {
+    const razred = (data[snovAktivnaSola] || {})[snovAktivniRazred] || { predmeti: [] };
+    return razred.predmeti.find(p => p.id === snovAktivniPredmetId) || null;
+  }
 
   function renderSnovTeme() {
-    const data = initSnovData();
-    const predmet = data.predmeti.find(p => p.id === snovAktivniPredmetId);
+    const data    = getSnovData();
+    const predmet = _snovGetPredmet(data);
     if (!predmet) return;
-
-    document.getElementById('snovTemePanelTitle').textContent = '📚 ' + predmet.ime + ' – Teme';
-    document.getElementById('snovTemeBreadcrumb').innerHTML = '<span>' + escHtml(predmet.ime) + '</span>';
-
+    const jeOs   = snovAktivnaSola === 'osnovna';
+    const oznaka = jeOs ? `${snovAktivniRazred}. razred` : `${snovAktivniRazred}. letnik`;
+    document.getElementById('snovTemePanelTitle').textContent = '📂 ' + predmet.ime + ' – Teme';
+    document.getElementById('snovTemeBreadcrumb').innerHTML =
+      `<span>${jeOs ? 'Osnovna šola' : 'Srednja šola'}</span> › <span>${oznaka}</span> › <span>${escHtml(predmet.ime)}</span>`;
     const list = document.getElementById('snovTemeList');
     list.innerHTML = '';
     const teme = predmet.teme || [];
@@ -2188,12 +2287,12 @@ Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih be
     teme.forEach(t => {
       const el = document.createElement('div');
       el.className = 'snov-item';
-      const bCount = t.besedila ? t.besedila.length : 0;
+      const bc = t.besedila ? t.besedila.length : 0;
       el.innerHTML = `
         <div class="snov-item-icon">📂</div>
         <div class="snov-item-info" style="cursor:pointer;" data-id="${t.id}">
           <div class="snov-item-name">${escHtml(t.ime)}</div>
-          <div class="snov-item-meta">${bCount} ${bCount === 1 ? 'besedilo' : 'besedil'}</div>
+          <div class="snov-item-meta">${bc} ${bc === 1 ? 'besedilo' : 'besedil'}</div>
         </div>
         <div class="snov-item-actions">
           <button class="icon-btn rename" data-id="${t.id}">Preimenuj</button>
@@ -2201,16 +2300,13 @@ Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih be
         </div>`;
       el.querySelector('.snov-item-info').addEventListener('click', function() {
         snovAktivnaTemaId = parseInt(this.dataset.id);
-        renderSnovBesedila();
         showScreen('screen-snov-besedila');
       });
       el.querySelector('.icon-btn.rename').addEventListener('click', function(e) {
-        e.stopPropagation();
-        snovPreimenujTemo(parseInt(this.dataset.id));
+        e.stopPropagation(); snovPreimenujTemo(parseInt(this.dataset.id));
       });
       el.querySelector('.icon-btn.del').addEventListener('click', function(e) {
-        e.stopPropagation();
-        snovIzbrisiTemo(parseInt(this.dataset.id));
+        e.stopPropagation(); snovIzbrisiTemo(parseInt(this.dataset.id));
       });
       list.appendChild(el);
     });
@@ -2219,8 +2315,8 @@ Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih be
   function snovDodajTemo() {
     const ime = prompt('Vnesite ime nove teme (npr. Rimljani, Fotosinteza …):');
     if (!ime || !ime.trim()) return;
-    const data = initSnovData();
-    const predmet = data.predmeti.find(p => p.id === snovAktivniPredmetId);
+    const data    = getSnovData();
+    const predmet = _snovGetPredmet(data);
     if (!predmet) return;
     if (!predmet.teme) predmet.teme = [];
     predmet.teme.push({ id: Date.now(), ime: ime.trim(), besedila: [] });
@@ -2229,8 +2325,8 @@ Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih be
   }
 
   function snovPreimenujTemo(id) {
-    const data = initSnovData();
-    const predmet = data.predmeti.find(p => p.id === snovAktivniPredmetId);
+    const data    = getSnovData();
+    const predmet = _snovGetPredmet(data);
     if (!predmet) return;
     const t = predmet.teme.find(x => x.id === id);
     if (!t) return;
@@ -2243,8 +2339,8 @@ Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih be
 
   function snovIzbrisiTemo(id) {
     if (!confirm('Ali res želite izbrisati to temo in vsa besedila v njej?')) return;
-    const data = initSnovData();
-    const predmet = data.predmeti.find(p => p.id === snovAktivniPredmetId);
+    const data    = getSnovData();
+    const predmet = _snovGetPredmet(data);
     if (!predmet) return;
     predmet.teme = predmet.teme.filter(x => x.id !== id);
     setSnovData(data);
@@ -2252,20 +2348,24 @@ Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih be
   }
 
   // ── Besedila ──
+  function _snovGetTema(data) {
+    const predmet = _snovGetPredmet(data);
+    if (!predmet) return null;
+    return predmet.teme.find(t => t.id === snovAktivnaTemaId) || null;
+  }
 
   function renderSnovBesedila() {
-    const data = initSnovData();
-    const predmet = data.predmeti.find(p => p.id === snovAktivniPredmetId);
+    const data    = getSnovData();
+    const predmet = _snovGetPredmet(data);
     if (!predmet) return;
-    const tema = predmet.teme.find(t => t.id === snovAktivnaTemaId);
+    const tema = _snovGetTema(data);
     if (!tema) return;
-
+    const jeOs   = snovAktivnaSola === 'osnovna';
+    const oznaka = jeOs ? `${snovAktivniRazred}. razred` : `${snovAktivniRazred}. letnik`;
     document.getElementById('snovBesedilaPanelTitle').textContent = '📄 ' + tema.ime;
     document.getElementById('snovBesedilaBreadcrumb').innerHTML =
-      '<span>' + escHtml(predmet.ime) + '</span> &rsaquo; <span>' + escHtml(tema.ime) + '</span>';
-
+      `<span>${jeOs ? 'Osnovna šola' : 'Srednja šola'}</span> › <span>${oznaka}</span> › <span>${escHtml(predmet.ime)}</span> › <span>${escHtml(tema.ime)}</span>`;
     snovToggleVnosBesedila(false);
-
     const list = document.getElementById('snovBesedilaList');
     list.innerHTML = '';
     const besedila = tema.besedila || [];
@@ -2302,10 +2402,8 @@ Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih be
   }
 
   function snovGetBesedilo(id) {
-    const data = initSnovData();
-    const predmet = data.predmeti.find(p => p.id === snovAktivniPredmetId);
-    if (!predmet) return null;
-    const tema = predmet.teme.find(t => t.id === snovAktivnaTemaId);
+    const data = getSnovData();
+    const tema = _snovGetTema(data);
     if (!tema) return null;
     return tema.besedila.find(b => b.id === id) || null;
   }
@@ -2320,17 +2418,13 @@ Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih be
   }
 
   function snovShraniBesedilo() {
-    const naslov = document.getElementById('snovBesediloNaslov').value.trim();
+    const naslov  = document.getElementById('snovBesediloNaslov').value.trim();
     const vsebina = document.getElementById('snovBesediloVsebina').value.trim();
     if (!vsebina) { alert('Besedilo ne sme biti prazno.'); return; }
-
-    const data = initSnovData();
-    const predmet = data.predmeti.find(p => p.id === snovAktivniPredmetId);
-    if (!predmet) return;
-    const tema = predmet.teme.find(t => t.id === snovAktivnaTemaId);
+    const data = getSnovData();
+    const tema = _snovGetTema(data);
     if (!tema) return;
     if (!tema.besedila) tema.besedila = [];
-
     tema.besedila.unshift({
       id: Date.now(),
       naslov: naslov || vsebina.slice(0, 50),
@@ -2343,10 +2437,8 @@ Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih be
   }
 
   function snovPreimenujBesedilo(id) {
-    const data = initSnovData();
-    const predmet = data.predmeti.find(p => p.id === snovAktivniPredmetId);
-    if (!predmet) return;
-    const tema = predmet.teme.find(t => t.id === snovAktivnaTemaId);
+    const data = getSnovData();
+    const tema = _snovGetTema(data);
     if (!tema) return;
     const b = tema.besedila.find(x => x.id === id);
     if (!b) return;
@@ -2359,10 +2451,8 @@ Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih be
 
   function snovIzbrisiB(id) {
     if (!confirm('Ali res želite izbrisati to besedilo?')) return;
-    const data = initSnovData();
-    const predmet = data.predmeti.find(p => p.id === snovAktivniPredmetId);
-    if (!predmet) return;
-    const tema = predmet.teme.find(t => t.id === snovAktivnaTemaId);
+    const data = getSnovData();
+    const tema = _snovGetTema(data);
     if (!tema) return;
     tema.besedila = tema.besedila.filter(x => x.id !== id);
     setSnovData(data);
