@@ -9,7 +9,8 @@ const corsHeaders = {
 // Glas, ki dobro govori slovensko (večjezični ElevenLabs glas).
 // Za zamenjavo posodobi samo to konstanto:
 const VOICE_ID = "XB0fDUnXU5powFXDhCwa"; // Charlotte – večjezični glas
-const MODEL_ID = "eleven_turbo_v2_5";      // zamenjaj z "eleven_flash_v2_5" po potrebi
+// Rezervni glas, če Charlotte ne deluje: Rachel = "21m00Tcm4TlvDq8ikWAM"
+const MODEL_ID = "eleven_multilingual_v2"; // podpira slovenščino brez language_code
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -47,7 +48,7 @@ serve(async (req) => {
         body: JSON.stringify({
           text: besedilo,
           model_id: MODEL_ID,
-          language_code: "sl",
+          // eleven_multilingual_v2 zazna jezik samodejno – language_code NI potreben
           voice_settings: {
             stability: 0.50,
             similarity_boost: 0.75,
@@ -57,9 +58,13 @@ serve(async (req) => {
     );
 
     if (!elResp.ok) {
-      const errText = await elResp.text().catch(() => "");
+      const errText = await elResp.text().catch(() => "(ni besedila)");
       return new Response(
-        JSON.stringify({ error: `ElevenLabs napaka ${elResp.status}`, podrobnosti: errText }),
+        JSON.stringify({
+          error: `ElevenLabs napaka ${elResp.status}: ${errText}`,
+          status: elResp.status,
+          podrobnosti: errText,
+        }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
