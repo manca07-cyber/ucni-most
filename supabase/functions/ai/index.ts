@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { besedilo, navodilo } = await req.json();
+    const { besedilo, navodilo, slika, mediaType } = await req.json();
 
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!apiKey) {
@@ -20,6 +20,29 @@ serve(async (req) => {
         JSON.stringify({ error: 'ANTHROPIC_API_KEY ni nastavljen' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    let messageContent;
+
+    if (slika) {
+      // Način OCR: preberi besedilo iz slike
+      messageContent = [
+        {
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: mediaType || 'image/jpeg',
+            data: slika,
+          },
+        },
+        {
+          type: 'text',
+          text: 'Natančno prepiši vse besedilo s te slike v slovenščini. Ohrani naravni vrstni red branja (od leve proti desni, od zgoraj navzdol). Pravilno upoštevaj šumnike (č, š, ž). Vrni samo golo prepisano besedilo brez kakršnih koli komentarjev, razlag ali uvoda.',
+        },
+      ];
+    } else {
+      // Obstoječi način: besedilna zahteva
+      messageContent = `${navodilo}\n\n${besedilo}`;
     }
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -31,11 +54,11 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1500,
+        max_tokens: slika ? 4000 : 1500,
         messages: [
           {
             role: 'user',
-            content: `${navodilo}\n\n${besedilo}`,
+            content: messageContent,
           },
         ],
       }),
