@@ -8,8 +8,9 @@ const corsHeaders = {
 
 // Glas, ki dobro govori slovensko (večjezični ElevenLabs glas).
 // Za zamenjavo posodobi samo to konstanto:
-const VOICE_ID = "XB0fDUnXU5powFXDhCwa"; // Charlotte – večjezični glas
-// Rezervni glas, če Charlotte ne deluje: Rachel = "21m00Tcm4TlvDq8ikWAM"
+// Prejšnji glas: Charlotte = "XB0fDUnXU5powFXDhCwa" (za obnovitev zamenjaj spodnjo vrednost)
+const VOICE_ID = "YPHIuEeDxVpXZzb57Wnk"; // Maja (slovenski)
+// Rezervni glas, če Maja ne deluje: Rachel = "21m00Tcm4TlvDq8ikWAM"
 const MODEL_ID = "eleven_multilingual_v2"; // podpira slovenščino brez language_code
 
 serve(async (req) => {
