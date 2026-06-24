@@ -11,9 +11,8 @@ const corsHeaders = {
 // Prejšnji glas: Charlotte = "XB0fDUnXU5powFXDhCwa" (za obnovitev zamenjaj spodnjo vrednost)
 const VOICE_ID = "YPHIuEeDxVpXZzb57Wnk"; // Maja (slovenski)
 // Rezervni glas, če Maja ne deluje: Rachel = "21m00Tcm4TlvDq8ikWAM"
-// Model eleven_turbo_v2_5 z language_code "sl" izrecno nastavi slovenščino in prepreči hrvaški naglas.
-// Ob težavah lahko zamenjaj z "eleven_flash_v2_5" (prav tako z language_code "sl").
-const MODEL_ID = "eleven_turbo_v2_5";
+// Model eleven_flash_v2_5 z language_code "sl" izrecno nastavi slovenščino in prepreči hrvaški naglas.
+const MODEL_ID = "eleven_flash_v2_5";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
