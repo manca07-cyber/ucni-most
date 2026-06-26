@@ -1917,13 +1917,16 @@
   // in se NIKOLI ne prikaže. Menjavanje barv se za vsako besedo začne znova.
   function _appendZlogiText(parent, text) {
     // Beseda = zaporedje črk z morebitnimi | med njimi. Vse drugo (presledki,
-    // ločila, števke) ostane navadno besedilo v običajni barvi.
+    // ločila, števke) ostane navadno besedilo v običajni barvi. Znak | je
+    // SAMO ločilo med zlogi in se uporabniku NIKOLI ne prikaže.
     const re = /[\p{L}]+(?:\|[\p{L}]+)*/gu;
     let last = 0;
     let m;
     while ((m = re.exec(text)) !== null) {
       if (m.index > last) {
-        parent.appendChild(document.createTextNode(text.slice(last, m.index)));
+        // Med besedami pustimo navadno besedilo, brez morebitnih stray | znakov.
+        const between = text.slice(last, m.index).replace(/\|/g, '');
+        if (between) parent.appendChild(document.createTextNode(between));
       }
       const syls = m[0].split('|').filter(Boolean);
       syls.forEach((s, i) => {
@@ -1935,7 +1938,8 @@
       last = re.lastIndex;
     }
     if (last < text.length) {
-      parent.appendChild(document.createTextNode(text.slice(last)));
+      const tail = text.slice(last).replace(/\|/g, '');
+      if (tail) parent.appendChild(document.createTextNode(tail));
     }
   }
 
@@ -1982,6 +1986,7 @@
   }
 
   async function _fetchZlogi(besedilo) {
+    // Klic je popolnoma ločen od miselnega vzorca: pošljemo izrecno naloga="zlogi".
     const resp = await fetch(SUPABASE_URL, {
       method: 'POST',
       headers: {
@@ -2007,7 +2012,14 @@
     if (!raw) throw new Error('Strežnik ni vrnil besedila.');
     // Varnostno odstrani morebitne ograje ```...```
     raw = raw.replace(/^```[a-z]*\s*\n?/i, '').replace(/\n?```\s*$/i, '');
-    return raw;
+    // Če bi model po pomoti dodal uvodno razlago kot npr. "Razdeljeno besedilo:"
+    // pred prvim stavkom, jo odstranimo (samo če prva vrstica ne vsebuje | in se
+    // konča s ":" — torej je očitno uvod, ne pa del besedila).
+    const lines = raw.split(/\n/);
+    if (lines.length > 1 && !lines[0].includes('|') && /:\s*$/.test(lines[0]) && lines[0].length < 80) {
+      raw = lines.slice(1).join('\n').replace(/^\s*\n/, '');
+    }
+    return raw.trim();
   }
 
   async function toggleZlogi() {
