@@ -49,9 +49,11 @@ serve(async (req) => {
       ];
     } else if (naloga === 'zlogi') {
       // Način zlogovanje: vrni isto besedilo z označenimi mejami med zlogi (znak |)
+      // POMEMBNO: ta veja je popolnoma ločena od miselnega vzorca; tukaj se NIKOLI
+      // ne generira JSON, SVG, miselni vzorec ali kakršna koli druga oblika izhoda.
       maxTokens = 8000;
-      systemPrompt = 'Si natančno orodje za zlogovanje slovenskega besedila. Tvoja edina naloga je, da v dano besedilo znotraj besed vstaviš znak | (navpična črta) kot ločilo med zlogi, po pravilih slovenskega zlogovanja, čim bolj pravilno. Stroga pravila: 1) Ne spreminjaj NIČESAR drugega — ohrani točno iste črke, velike in male črke, vsa ločila, presledke, prelome vrstic in vrstni red besed. 2) Ne popravljaj tipkarskih napak, ne dodajaj in ne odvzemaj besed. 3) Znak | vstavljaj SAMO med zloge znotraj besed; ne deli števk, ločil ali samostojnih črk. 4) Enozložne besede pusti brez |. 5) Vrni SAMO označeno besedilo kot navadno besedilo, brez kakršne koli razlage, brez uvoda, brez markdown in brez ograj s tremi nagibnimi črtami. Primeri: "celica" -> "ce|li|ca", "rastlinske" -> "rast|lin|ske".';
-      messageContent = `Razdeli naslednje besedilo na zloge po zgornjih pravilih in vrni samo označeno besedilo:\n\n${besedilo}`;
+      systemPrompt = 'Si natančno orodje za zlogovanje slovenskega besedila. Tvoja edina naloga je: v dano besedilo znotraj besed vstaviš znak | (navpična črta) kot ločilo med zlogi po pravilih slovenskega zlogovanja, čim bolj pravilno. Stroga pravila: 1) Ne spreminjaj NIČESAR drugega — ohrani točno iste črke, velike in male črke, vsa ločila, presledke, prelome vrstic in vrstni red besed. 2) Ne popravljaj tipkarskih napak, ne dodajaj in ne odvzemaj besed. 3) Znak | vstavljaj SAMO med zloge znotraj besed; ne deli števk, ločil ali samostojnih črk. 4) Enozložne besede pusti brez |. 5) NIKOLI ne sestavljaj miselnega vzorca, povzetka, razlage, prevoda ali kakršne koli druge naloge. NIKOLI ne vračaj JSON, SVG, markdown, naštevanj, oklepajev ali ograj s tremi nagibnimi črtami. 6) Vrni izključno označeno besedilo kot navaden tekst — brez uvoda, brez zaključka, brez narekovajev okoli rezultata. Primeri: "celica" -> "ce|li|ca", "rastlinske" -> "rast|lin|ske", "in" -> "in" (enozložno, brez |).';
+      messageContent = `Razdeli naslednje besedilo na zloge po zgornjih pravilih in vrni samo označeno besedilo (brez uvodnih ali zaključnih stavkov, brez markdown, brez JSON, brez miselnega vzorca):\n\n${besedilo}`;
     } else {
       // Obstoječi način: besedilna zahteva
       messageContent = `${navodilo}\n\n${besedilo}`;
@@ -68,6 +70,7 @@ serve(async (req) => {
         model: 'claude-sonnet-4-6',
         max_tokens: maxTokens,
         system: systemPrompt,
+        ...(naloga === 'zlogi' ? { temperature: 0 } : {}),
         messages: [
           {
             role: 'user',
