@@ -1187,6 +1187,14 @@
     body.dark-theme .fokus-nav-btn { background: #2a2a40; }
     body.dark-theme .fokus-nav-btn:hover:not(:disabled) { background: var(--accent); color: #fff; }
 
+    /* ── Zlogi (barvno menjavanje zlogov) ── */
+    /* Dve umirjeni, a jasno razločljivi barvi; znak | se nikoli ne prikaže. */
+    .reader-box .zlog-0 { color: #1b6ca8; }   /* modra */
+    .reader-box .zlog-1 { color: #b5532a; }   /* opečnata */
+    /* Na temni podlagi svetlejša odtenka za dober kontrast */
+    body.dark-theme .reader-box .zlog-0 { color: #6bb6ea; }
+    body.dark-theme .reader-box .zlog-1 { color: #eaa15f; }
+
     /* ── Responsive ── */
     @media (max-width: 560px) {
       .reader-box { padding: 20px 18px; }
@@ -1291,6 +1299,7 @@
       <button class="back-btn" style="margin-bottom:0; background:var(--accent); color:#fff; border-color:var(--accent);" onclick="showScreen('screen-razumevanje')">🧠 Razumevanje</button>
       <button class="back-btn" style="margin-bottom:0; background:#e67e22; color:#fff; border-color:#e67e22;" onclick="showScreen('screen-ponavljanje')">🔁 Ponavljanje</button>
       <button class="back-btn" id="btnFokus" style="margin-bottom:0;" onclick="toggleFokus()">🔍 Fokus</button>
+      <button class="back-btn" id="btnZlogi" style="margin-bottom:0;" onclick="toggleZlogi()">🎨 Zlogi</button>
     </div>
 
     <!-- Font & sliders -->
@@ -1779,18 +1788,27 @@
 
   // ── Markdown helpers ──
 
+  // Med renderiranjem: če je true, se navadno besedilo izriše z barvnimi zlogi.
+  let _zlogiRender = false;
+
+  // Doda besedilo v element: bodisi kot navaden tekst bodisi z barvnimi zlogi (po znaku |).
+  function _appendInlineText(el, text) {
+    if (_zlogiRender) _appendZlogiText(el, text);
+    else el.appendChild(document.createTextNode(text));
+  }
+
   function _applyInlineMarkdown(el, text) {
     // Bold: **text** → <strong>; italic markers (*text* / _text_) → plain text
     const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_)/g);
     parts.forEach(part => {
       if (/^\*\*(.+)\*\*$/.test(part)) {
         const s = document.createElement('strong');
-        s.textContent = part.slice(2, -2);
+        _appendInlineText(s, part.slice(2, -2));
         el.appendChild(s);
       } else if (/^\*(.+)\*$/.test(part) || /^_(.+)_$/.test(part)) {
-        el.appendChild(document.createTextNode(part.slice(1, -1)));
+        _appendInlineText(el, part.slice(1, -1));
       } else {
-        el.appendChild(document.createTextNode(part));
+        _appendInlineText(el, part);
       }
     });
   }
@@ -1876,10 +1894,155 @@
     stopTTS();
     _fokusReset();
     _readerPlainText = txt;
+    // Novo besedilo → ponastavi zloge (predpomnilnik velja samo za trenutno besedilo)
+    _zlogiAktiven = false;
+    _zlogiAnnotated = null;
+    _zlogiLoading = false;
+    _updateZlogiBtn();
     const box = document.getElementById('readerBox');
     _renderMarkdownToBox(txt, box);
     applyColor();
     wrapWordsForTTS();
+  }
+
+  // ══════════════════════════════════════════════
+  // ── Zlogi (barvno menjavanje zlogov) ──
+  // ══════════════════════════════════════════════
+
+  let _zlogiAktiven   = false;  // ali je prikaz zlogov vklopljen
+  let _zlogiAnnotated = null;   // z | označena različica _readerPlainText (predpomnilnik)
+  let _zlogiLoading   = false;  // ali poteka klic na zaledje
+
+  // Izriše besedilo z barvnim menjavanjem zlogov. Znak | je ločilo med zlogi
+  // in se NIKOLI ne prikaže. Menjavanje barv se za vsako besedo začne znova.
+  function _appendZlogiText(parent, text) {
+    // Beseda = zaporedje črk z morebitnimi | med njimi. Vse drugo (presledki,
+    // ločila, števke) ostane navadno besedilo v običajni barvi.
+    const re = /[\p{L}]+(?:\|[\p{L}]+)*/gu;
+    let last = 0;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) {
+        parent.appendChild(document.createTextNode(text.slice(last, m.index)));
+      }
+      const syls = m[0].split('|').filter(Boolean);
+      syls.forEach((s, i) => {
+        const span = document.createElement('span');
+        span.className = 'zlog zlog-' + (i % 2);
+        span.textContent = s;
+        parent.appendChild(span);
+      });
+      last = re.lastIndex;
+    }
+    if (last < text.length) {
+      parent.appendChild(document.createTextNode(text.slice(last)));
+    }
+  }
+
+  // Čisto besedilo za branje na glas (brez markdown oznak in brez znakov |).
+  function _ttsCleanText() {
+    return _stripMarkdown(_readerPlainText).replace(/\s+/g, ' ').trim();
+  }
+
+  // Osrednji izris bralnika – upošteva fokus in zloge hkrati.
+  function renderReader() {
+    const box = document.getElementById('readerBox');
+    if (fokusAktiven) {
+      _renderFokusBox();                 // fokus sam upošteva zloge
+      ttsUtteranceText = _ttsCleanText();
+    } else if (_zlogiAktiven && _zlogiAnnotated) {
+      _zlogiRender = true;
+      _renderMarkdownToBox(_zlogiAnnotated, box);
+      _zlogiRender = false;
+      applyColor();
+      ttsUtteranceText = _ttsCleanText();  // glas vedno bere čisto besedilo
+    } else {
+      _renderMarkdownToBox(_readerPlainText, box);
+      applyColor();
+      wrapWordsForTTS();
+    }
+  }
+
+  function _updateZlogiBtn() {
+    const btn = document.getElementById('btnZlogi');
+    if (!btn) return;
+    if (_zlogiLoading) {
+      btn.disabled = true;
+      btn.textContent = '🎨 nalagam …';
+      btn.style.cssText = 'margin-bottom:0; opacity:.7; cursor:default;';
+    } else if (_zlogiAktiven) {
+      btn.disabled = false;
+      btn.textContent = '🎨 Zlogi: VKL';
+      btn.style.cssText = 'margin-bottom:0; background:var(--accent); color:#fff; border-color:var(--accent);';
+    } else {
+      btn.disabled = false;
+      btn.textContent = '🎨 Zlogi';
+      btn.style.cssText = 'margin-bottom:0;';
+    }
+  }
+
+  async function _fetchZlogi(besedilo) {
+    const resp = await fetch(SUPABASE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ besedilo, naloga: 'zlogi' }),
+    });
+    if (!resp.ok) {
+      const txt = await resp.text().catch(() => '');
+      throw new Error('Strežnik je vrnil napako ' + resp.status + (txt ? ': ' + txt : ''));
+    }
+    const data = await resp.json();
+    let raw = data.rezultat || data.result || data.odgovor || '';
+    if (!raw) {
+      const content = data.text || data.content || '';
+      if (Array.isArray(content)) {
+        raw = content.filter(b => b.type === 'text').map(b => b.text).join('\n');
+      } else {
+        raw = content;
+      }
+    }
+    if (!raw) throw new Error('Strežnik ni vrnil besedila.');
+    // Varnostno odstrani morebitne ograje ```...```
+    raw = raw.replace(/^```[a-z]*\s*\n?/i, '').replace(/\n?```\s*$/i, '');
+    return raw;
+  }
+
+  async function toggleZlogi() {
+    if (!_readerPlainText) { alert('V bralniku ni besedila.'); return; }
+    if (_zlogiLoading) return;
+
+    // Izklop
+    if (_zlogiAktiven) {
+      _zlogiAktiven = false;
+      _updateZlogiBtn();
+      renderReader();
+      return;
+    }
+
+    // Vklop – uporabi predpomnilnik, če obstaja
+    if (_zlogiAnnotated) {
+      _zlogiAktiven = true;
+      _updateZlogiBtn();
+      renderReader();
+      return;
+    }
+
+    // Prvi vklop za to besedilo → klic na zaledje
+    _zlogiLoading = true;
+    _updateZlogiBtn();
+    try {
+      _zlogiAnnotated = await _fetchZlogi(_readerPlainText);
+      _zlogiAktiven = true;
+    } catch (err) {
+      alert('Napaka pri nalaganju zlogov: ' + err.message);
+    } finally {
+      _zlogiLoading = false;
+      _updateZlogiBtn();
+      renderReader();
+    }
   }
 
   // ── Saved texts (localStorage) ──
@@ -3419,12 +3582,29 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
   }
 
   function deaktivirajFokus() {
-    const txt = _readerPlainText;
     _fokusReset();
-    const box = document.getElementById('readerBox');
-    _renderMarkdownToBox(txt, box);
-    applyColor();
-    wrapWordsForTTS();
+    renderReader();   // ponovni izris običajnega načina (upošteva zloge)
+  }
+
+  // Doda poved (eno ali več) kot klikljive fokus-spane; če so zlogi vklopljeni,
+  // se besedilo izriše z barvnimi zlogi. Vrne posodobljen globalni indeks.
+  function _fokusDodajPovedi(box, cleanText, useZlogi, globalIdx) {
+    const p = document.createElement('p');
+    const povedi = razdelNaPovedi(cleanText);
+    povedi.forEach((s, si) => {
+      const span = document.createElement('span');
+      span.className = 'fokus-poved';
+      if (useZlogi) _appendZlogiText(span, s);
+      else span.appendChild(document.createTextNode(s));
+      if (si < povedi.length - 1) span.appendChild(document.createTextNode(' '));
+      const idx = globalIdx++;
+      span.dataset.idx = idx;
+      span.addEventListener('click', () => { fokusIndeks = idx; _posodobiAktivno(); });
+      p.appendChild(span);
+      fokusPovedi.push(span);
+    });
+    box.appendChild(p);
+    return globalIdx;
   }
 
   function _renderFokusBox() {
@@ -3433,7 +3613,12 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     fokusPovedi = [];
     let globalIdx = 0;
 
-    const blocks = _readerPlainText.split(/\n\n+/).map(b => b.trim()).filter(Boolean);
+    // Vir: če so zlogi vklopljeni, uporabi z | označeno besedilo (znak | je
+    // znotraj besed, zato ne moti delitve na povedi). Sicer čisto besedilo.
+    const useZlogi = _zlogiAktiven && !!_zlogiAnnotated;
+    const source = useZlogi ? _zlogiAnnotated : _readerPlainText;
+
+    const blocks = source.split(/\n\n+/).map(b => b.trim()).filter(Boolean);
     blocks.forEach(block => {
       const lines = block.split(/\n/).map(l => l.trim()).filter(Boolean);
       if (!lines.length) return;
@@ -3445,44 +3630,21 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
       const hm = _matchHeading(lines[0]);
       if (hm) {
         const h = document.createElement('p'); h.className = hm.cls;
-        h.textContent = _stripMarkdown(hm.txt);
+        const naslov = _stripMarkdown(hm.txt);
+        if (useZlogi) _appendZlogiText(h, naslov);
+        else h.textContent = naslov;
         box.appendChild(h);
         // Render remaining lines as paragraph if any
         const rest = lines.slice(1).join(' ');
         if (rest.trim()) {
-          const cleanRest = _stripMarkdown(rest);
-          const p = document.createElement('p');
-          const povedi = razdelNaPovedi(cleanRest);
-          povedi.forEach((s, si) => {
-            const span = document.createElement('span');
-            span.className = 'fokus-poved';
-            span.textContent = s + (si < povedi.length - 1 ? ' ' : '');
-            const idx = globalIdx++;
-            span.dataset.idx = idx;
-            span.addEventListener('click', () => { fokusIndeks = idx; _posodobiAktivno(); });
-            p.appendChild(span);
-            fokusPovedi.push(span);
-          });
-          box.appendChild(p);
+          globalIdx = _fokusDodajPovedi(box, _stripMarkdown(rest), useZlogi, globalIdx);
         }
         return;
       }
 
       // List → render as paragraph-like with sentence spans on clean text
       const cleanBlock = _stripMarkdown(lines.join(' '));
-      const p = document.createElement('p');
-      const povedi = razdelNaPovedi(cleanBlock);
-      povedi.forEach((s, si) => {
-        const span = document.createElement('span');
-        span.className = 'fokus-poved';
-        span.textContent = s + (si < povedi.length - 1 ? ' ' : '');
-        const idx = globalIdx++;
-        span.dataset.idx = idx;
-        span.addEventListener('click', () => { fokusIndeks = idx; _posodobiAktivno(); });
-        p.appendChild(span);
-        fokusPovedi.push(span);
-      });
-      box.appendChild(p);
+      globalIdx = _fokusDodajPovedi(box, cleanBlock, useZlogi, globalIdx);
     });
 
     box.classList.add('fokus-aktiven');
