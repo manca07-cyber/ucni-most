@@ -556,6 +556,27 @@
     .ai-btn.btn-words     { background: #00897b; }
     .ai-btn.btn-summary   { background: #e67e22; }
     .ai-btn.btn-split     { background: #8e44ad; }
+    .ai-btn.btn-mindmap   { background: #c2185b; }
+
+    /* ── Miselni vzorec ── */
+    .mm-result-wrap { margin-top: 28px; display: none; }
+    .mm-result-wrap.visible { display: block; }
+    .mm-svg-wrap {
+      overflow-x: auto; overflow-y: hidden;
+      border-radius: var(--radius);
+      border: 2px solid var(--panel);
+      background: #fafafa;
+    }
+    body.dark-theme .mm-svg-wrap { background: #1e1e30; border-color: #333; }
+    .btn-print-mm {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #1a1a2e; color: #fff;
+      border: none; border-radius: 30px;
+      font-family: inherit; font-size: 1rem; font-weight: 700;
+      padding: 12px 26px; cursor: pointer; margin-top: 14px;
+      transition: background .2s;
+    }
+    .btn-print-mm:hover { background: #2d2d50; }
 
     /* ── Loading spinner ── */
     .ai-loading {
@@ -1234,6 +1255,10 @@
           <span class="btn-icon">🧩</span>
           Razdeli na manjše dele
         </button>
+        <button class="ai-btn btn-mindmap" onclick="callMiselniVzorec()">
+          <span class="btn-icon">🗺️</span>
+          Miselni vzorec
+        </button>
       </div>
 
       <!-- Loading -->
@@ -1253,6 +1278,13 @@
           <button class="btn-tts-ai" id="btnAiTts" onclick="toggleAiTTS()">🔊 Preberi na glas</button>
           <button class="btn-use-in-reader" onclick="useAiResultInReader()">📖 Odpri v bralniku</button>
         </div>
+      </div>
+
+      <!-- Miselni vzorec result -->
+      <div class="mm-result-wrap" id="mmResultWrap">
+        <span class="ai-unverified-badge">⚠️ nepreverjeno – odgovor je ustvarila umetna inteligenca</span>
+        <div class="mm-svg-wrap" id="mmSvgWrap"></div>
+        <button class="btn-print-mm" onclick="printMiselniVzorec()">🖨️ Natisni</button>
       </div>
     </div>
   </div><!-- /screen-razumevanje -->
@@ -1950,6 +1982,7 @@
 
   function showAiResult(txt) {
     stopAiTTS();
+    hideMmResult();
     document.getElementById('aiResultBox').textContent = txt;
     document.getElementById('aiResultWrap').classList.add('visible');
     document.getElementById('btnAiTts').textContent = '🔊 Preberi na glas';
@@ -2249,6 +2282,198 @@ Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih be
     const indeksi = [...napacneIndeksi];
     napacneIndeksi = [];
     renderKviz(indeksi);
+  }
+
+  // ══════════════════════════════════════════════
+  // ── Miselni vzorec ──
+  // ══════════════════════════════════════════════
+
+  async function callMiselniVzorec() {
+    const besedilo = getReaderText();
+    if (!besedilo) {
+      showAiError('V bralniku ni besedila. Najprej prilepi ali odpri besedilo v bralniku.');
+      return;
+    }
+
+    const navodilo = `Odgovori IZKLJUČNO z veljavnim JSON-om (brez markdown oznak, brez backtick ograj, brez dodatnega besedila). JSON mora biti točno v tej obliki:
+{"sredisce":"glavna tema (1–3 besede)","veje":[{"naslov":"ključni pojem","podtocke":["kratka podrobnost","kratka podrobnost"]}]}
+
+Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren za otroka z disleksijo. Vrednosti naj bodo kratke (največ 4 besede na polje).`;
+
+    setAiLoading(true);
+    hideMmResult();
+    hideAiResult();
+    hideAiError();
+    disableAiBtns(true);
+
+    try {
+      const resp = await fetch(SUPABASE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ besedilo, navodilo }),
+      });
+
+      if (!resp.ok) {
+        const txt = await resp.text().catch(() => '');
+        throw new Error('Strežnik je vrnil napako ' + resp.status + (txt ? ': ' + txt : ''));
+      }
+
+      const data = await resp.json();
+
+      let raw = data.rezultat || data.result || data.odgovor || '';
+      if (!raw) {
+        const content = data.text || data.content || '';
+        if (Array.isArray(content)) {
+          raw = content.filter(b => b.type === 'text').map(b => b.text).join('\n');
+        } else {
+          raw = content;
+        }
+      }
+      if (!raw) throw new Error('Strežnik ni vrnil besedila.');
+
+      let jsonStr = raw.trim()
+        .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+
+      let vzorec;
+      try { vzorec = JSON.parse(jsonStr); }
+      catch (e) {
+        showAiError('Poskusi znova — odgovor ni bil v pričakovani obliki.');
+        return;
+      }
+
+      showMmResult(vzorec);
+
+    } catch (err) {
+      showAiError('Napaka pri klicu umetne inteligence: ' + err.message);
+    } finally {
+      setAiLoading(false);
+      disableAiBtns(false);
+    }
+  }
+
+  function showMmResult(data) {
+    document.getElementById('mmSvgWrap').innerHTML = renderMiselniVzorec(data);
+    document.getElementById('mmResultWrap').classList.add('visible');
+  }
+
+  function hideMmResult() {
+    document.getElementById('mmResultWrap').classList.remove('visible');
+  }
+
+  function printMiselniVzorec() {
+    const svgHtml = document.getElementById('mmSvgWrap').innerHTML;
+    const win = window.open('', '_blank');
+    win.document.write(
+      '<!DOCTYPE html><html><head><title>Miselni vzorec</title>' +
+      '<style>body{margin:0;padding:16px;}svg{width:100%;height:auto;}</style>' +
+      '</head><body>' + svgHtml + '</body></html>'
+    );
+    win.document.close();
+    win.focus();
+    win.print();
+  }
+
+  function renderMiselniVzorec(data) {
+    const { sredisce, veje } = data;
+    const paleta = [
+      { main: '#4a7ecf', light: '#bdd4f6' },
+      { main: '#27ae60', light: '#a8dfc2' },
+      { main: '#e67e22', light: '#f5c99a' },
+      { main: '#8e44ad', light: '#d0a9e0' },
+      { main: '#c0392b', light: '#f0a09a' },
+      { main: '#16a085', light: '#88d8cc' },
+      { main: '#c2185b', light: '#f0a0c0' },
+    ];
+
+    const N = Math.min((veje || []).length, 7);
+    const W = 1100, H = 900;
+    const cx = W / 2, cy = H / 2;
+    const branchDist = 230;
+    const subDist = 150;
+    const crx = 88, cry = 44;
+
+    function esc(s) {
+      return String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function wrapWords(text, maxCh) {
+      const words = String(text).split(' ');
+      const lines = [];
+      let cur = '';
+      for (const w of words) {
+        const test = cur ? cur + ' ' + w : w;
+        if (test.length <= maxCh) { cur = test; }
+        else { if (cur) lines.push(cur); cur = w; }
+      }
+      if (cur) lines.push(cur);
+      return lines;
+    }
+
+    function svgTextLines(x, y, text, opts) {
+      const { fill = '#fff', size = 13, weight = '400', maxCh = 13 } = opts || {};
+      const lines = wrapWords(text, maxCh);
+      const lh = size * 1.35;
+      const startY = y - (lines.length - 1) * lh / 2;
+      return lines.map((l, i) =>
+        `<text x="${x.toFixed(1)}" y="${(startY + i * lh).toFixed(1)}" ` +
+        `text-anchor="middle" dominant-baseline="middle" ` +
+        `font-family="Lexend,sans-serif" font-size="${size}" font-weight="${weight}" fill="${fill}">` +
+        esc(l) + '</text>'
+      ).join('');
+    }
+
+    let out = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="min-width:620px;display:block;">`;
+    out += `<rect width="${W}" height="${H}" fill="#fafafa" rx="16"/>`;
+
+    // Center node
+    out += `<ellipse cx="${cx}" cy="${cy}" rx="${crx}" ry="${cry}" fill="#1a1a2e"/>`;
+    out += svgTextLines(cx, cy, sredisce || '', { fill: '#fff', size: 16, weight: '700', maxCh: 11 });
+
+    for (let i = 0; i < N; i++) {
+      const ang = ((i * 360 / N) - 90) * Math.PI / 180;
+      const c = paleta[i % paleta.length];
+
+      const ex = cx + crx * Math.cos(ang);
+      const ey = cy + cry * Math.sin(ang);
+      const bx = cx + branchDist * Math.cos(ang);
+      const by = cy + branchDist * Math.sin(ang);
+
+      // Main line
+      out += `<line x1="${ex.toFixed(1)}" y1="${ey.toFixed(1)}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}" ` +
+             `stroke="${c.main}" stroke-width="5" stroke-linecap="round"/>`;
+
+      // Branch node
+      out += `<ellipse cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" rx="70" ry="28" fill="${c.main}"/>`;
+      out += svgTextLines(bx, by, (veje[i] || {}).naslov || '', { fill: '#fff', size: 12, weight: '600', maxCh: 12 });
+
+      // Sub-points
+      const subs = ((veje[i] || {}).podtocke || []).slice(0, 4);
+      const spacing = 44;
+      const totalOffset = (subs.length - 1) * spacing / 2;
+      const px = -Math.sin(ang);
+      const py = Math.cos(ang);
+
+      subs.forEach((sub, j) => {
+        const off = j * spacing - totalOffset;
+        const sx = bx + subDist * Math.cos(ang) + px * off;
+        const sy = by + subDist * Math.sin(ang) + py * off;
+        const rw = 112, rh = 34;
+
+        out += `<line x1="${bx.toFixed(1)}" y1="${by.toFixed(1)}" x2="${sx.toFixed(1)}" y2="${sy.toFixed(1)}" ` +
+               `stroke="${c.light}" stroke-width="2.5" stroke-linecap="round"/>`;
+        out += `<rect x="${(sx - rw / 2).toFixed(1)}" y="${(sy - rh / 2).toFixed(1)}" ` +
+               `width="${rw}" height="${rh}" rx="9" fill="${c.light}"/>`;
+        out += svgTextLines(sx, sy, sub, { fill: '#1a1a2e', size: 11, maxCh: 15 });
+      });
+    }
+
+    out += '</svg>';
+    return out;
   }
 
   // ══════════════════════════════════════════════
