@@ -1944,7 +1944,11 @@
     window.speechSynthesis.speak(utt);
   }
 
+  // Zastavica: ali trenutno predvaja brskalniški TTS (speechSynthesis)
+  let ttsBrowserFallback = false;
+
   async function playTTS() {
+    // Nadaljevanje po premoru – ElevenLabs audio element
     if (ttsState === 'paused' && ttsAudio) {
       _applyPreservesPitch(ttsAudio);
       ttsAudio.playbackRate = ttsSpeedRate;
@@ -1953,9 +1957,27 @@
       updateTTSButtons();
       return;
     }
+    // Nadaljevanje po premoru – brskalniški glas (speechSynthesis)
+    if (ttsState === 'paused' && ttsBrowserFallback) {
+      window.speechSynthesis.resume();
+      ttsState = 'playing';
+      updateTTSButtons();
+      return;
+    }
+    // Predvajanje od začetka – audio element je že naložen (po Ustavi)
+    if (ttsState === 'stopped' && ttsAudio) {
+      _applyPreservesPitch(ttsAudio);
+      ttsAudio.playbackRate = ttsSpeedRate;
+      ttsAudio.currentTime = 0;
+      ttsAudio.play();
+      ttsState = 'playing';
+      updateTTSButtons();
+      return;
+    }
     if (ttsState === 'playing' || ttsState === 'loading') return;
     if (!ttsUtteranceText) { alert('V bralniku ni besedila za branje.'); return; }
 
+    ttsBrowserFallback = false;
     ttsAbort = new AbortController();
     ttsState = 'loading';
     updateTTSButtons();
@@ -1990,9 +2012,11 @@
       if (err.name === 'AbortError') { ttsState = 'stopped'; updateTTSButtons(); return; }
       // Rezerva – brskalnikov glas
       console.warn('ElevenLabs TTS ni uspel, preklop na brskalnik:', err);
+      ttsBrowserFallback = true;
       ttsState = 'playing';
       updateTTSButtons();
       _browserTTS(ttsUtteranceText, () => {
+        ttsBrowserFallback = false;
         ttsState = 'stopped';
         clearHighlight();
         updateTTSButtons();
@@ -2004,7 +2028,7 @@
     if (ttsState === 'playing') {
       if (ttsAudio) {
         ttsAudio.pause();
-      } else if ('speechSynthesis' in window) {
+      } else if (ttsBrowserFallback && 'speechSynthesis' in window) {
         window.speechSynthesis.pause();
       }
       ttsState = 'paused';
@@ -2014,8 +2038,14 @@
 
   function stopTTS() {
     if (ttsAbort) { ttsAbort.abort(); ttsAbort = null; }
-    if (ttsAudio) { _freeTtsAudio(); }
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (ttsAudio) {
+      ttsAudio.pause();
+      ttsAudio.currentTime = 0;
+    }
+    if (ttsBrowserFallback && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      ttsBrowserFallback = false;
+    }
     ttsState = 'stopped';
     clearHighlight();
     updateTTSButtons();
