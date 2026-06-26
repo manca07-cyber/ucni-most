@@ -55,6 +55,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: slika ? 4000 : 1500,
+        system: 'Vedno odgovarjaj izključno v slovenščini in uporabljaj samo slovensko latinico (vključno s č, š, ž). Nikoli ne uporabljaj cirilice ali besed iz drugih jezikov (npr. srbščine, hrvaščine); lastna imena in izraze zapiši v latinici. Besedilo piši v navadni, čisti obliki brez oblikovanja markdown — brez lojtr (#, ##), brez zvezdic (* in **), brez krepkega ali ležečega besedila in brez naštevanj z znaki (-, •). Piši v polnih, preprostih povedih. Kadar je za nalogo izrecno zahtevan JSON, vrni veljaven JSON, pri čemer naj bo besedilo znotraj vrednosti prav tako v čisti slovenščini brez markdown oznak.',
         messages: [
           {
             role: 'user',
