@@ -546,6 +546,51 @@
       margin-bottom: 1em;
     }
 
+    /* ── Markdown rendered elements ── */
+    .reader-box .md-h1 {
+      font-size: 1.55em;
+      font-weight: 700;
+      font-style: normal;
+      margin-top: .9em;
+      margin-bottom: .5em;
+      color: var(--accent);
+      line-height: 1.3;
+    }
+    .reader-box .md-h2 {
+      font-size: 1.3em;
+      font-weight: 700;
+      font-style: normal;
+      margin-top: .8em;
+      margin-bottom: .45em;
+      color: var(--accent);
+      line-height: 1.3;
+    }
+    .reader-box .md-h3 {
+      font-size: 1.12em;
+      font-weight: 700;
+      font-style: normal;
+      margin-top: .7em;
+      margin-bottom: .4em;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .reader-box .md-hr {
+      border: none;
+      border-top: 2px solid #ddd;
+      margin: 1em 0;
+    }
+    body.dark-theme .reader-box .md-hr { border-color: #555; }
+    .reader-box .md-ul,
+    .reader-box .md-ol {
+      margin-bottom: 1em;
+      padding-left: 1.6em;
+    }
+    .reader-box .md-ul li,
+    .reader-box .md-ol li {
+      margin-bottom: .35em;
+    }
+    .reader-box strong { font-weight: 700; font-style: normal; }
+
     /* ── Dark theme overrides ── */
     body.dark-theme {
       --panel: #2a2a40;
@@ -1732,27 +1777,107 @@
     showScreen('screen-reader');
   }
 
+  // ── Markdown helpers ──
+
+  function _applyInlineMarkdown(el, text) {
+    // Bold: **text** → <strong>; italic markers (*text* / _text_) → plain text
+    const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_)/g);
+    parts.forEach(part => {
+      if (/^\*\*(.+)\*\*$/.test(part)) {
+        const s = document.createElement('strong');
+        s.textContent = part.slice(2, -2);
+        el.appendChild(s);
+      } else if (/^\*(.+)\*$/.test(part) || /^_(.+)_$/.test(part)) {
+        el.appendChild(document.createTextNode(part.slice(1, -1)));
+      } else {
+        el.appendChild(document.createTextNode(part));
+      }
+    });
+  }
+
+  function _isListBlock(lines) {
+    return lines.every(l => /^[-*] /.test(l) || /^\d+\. /.test(l));
+  }
+
+  // Heading match helper (most hashes first to avoid prefix collision)
+  function _matchHeading(line) {
+    let m;
+    if ((m = line.match(/^### (.+)/))) return { cls: 'md-h3', txt: m[1] };
+    if ((m = line.match(/^## ([^#].+)/))) return { cls: 'md-h2', txt: m[1] };
+    if ((m = line.match(/^# ([^#].+)/))) return { cls: 'md-h1', txt: m[1] };
+    return null;
+  }
+
+  function _renderMarkdownBlock(raw, box) {
+    const lines = raw.split(/\n/).map(l => l.trim()).filter(Boolean);
+    if (!lines.length) return;
+
+    // Horizontal rule
+    if (lines.length === 1 && /^---+$/.test(lines[0])) {
+      const hr = document.createElement('hr');
+      hr.className = 'md-hr';
+      box.appendChild(hr);
+      return;
+    }
+
+    // Headings (single-line block starting with #)
+    if (lines.length === 1) {
+      const hm = _matchHeading(lines[0]);
+      if (hm) { const h = document.createElement('p'); h.className = hm.cls; _applyInlineMarkdown(h, hm.txt); box.appendChild(h); return; }
+    }
+
+    // Multi-line: check if first line is a heading
+    const hm0 = _matchHeading(lines[0]);
+    if (hm0) {
+      const h = document.createElement('p'); h.className = hm0.cls; _applyInlineMarkdown(h, hm0.txt); box.appendChild(h);
+      const rest = lines.slice(1).join('\n');
+      if (rest.trim()) _renderMarkdownBlock(rest, box);
+      return;
+    }
+
+    // Unordered list
+    if (lines.every(l => /^[-*] /.test(l))) {
+      const ul = document.createElement('ul'); ul.className = 'md-ul';
+      lines.forEach(l => { const li = document.createElement('li'); _applyInlineMarkdown(li, l.slice(2)); ul.appendChild(li); });
+      box.appendChild(ul); return;
+    }
+    // Ordered list
+    if (lines.every(l => /^\d+\. /.test(l))) {
+      const ol = document.createElement('ol'); ol.className = 'md-ol';
+      lines.forEach(l => { const li = document.createElement('li'); _applyInlineMarkdown(li, l.replace(/^\d+\. /, '')); ol.appendChild(li); });
+      box.appendChild(ol); return;
+    }
+
+    // Default: paragraph
+    const p = document.createElement('p');
+    _applyInlineMarkdown(p, lines.join(' '));
+    box.appendChild(p);
+  }
+
+  function _renderMarkdownToBox(txt, box) {
+    box.innerHTML = '';
+    const blocks = txt.split(/\n\n+/).map(b => b.trim()).filter(Boolean);
+    blocks.forEach(block => _renderMarkdownBlock(block, box));
+  }
+
+  // Strip markdown markers for TTS (no #, **, *, _, ---)
+  function _stripMarkdown(txt) {
+    return txt
+      .replace(/^#{1,3} /gm, '')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/_([^_]+)_/g, '$1')
+      .replace(/^[-*] /gm, '')
+      .replace(/^\d+\. /gm, '')
+      .replace(/^---+$/gm, '');
+  }
+
   function setReaderText(txt) {
     stopTTS();
     _fokusReset();
     _readerPlainText = txt;
     const box = document.getElementById('readerBox');
-    box.innerHTML = '';
-
-    const blocks = txt.split(/\n\n+/).map(b => b.replace(/\n/g, ' ').trim()).filter(Boolean);
-
-    blocks.forEach((block, i) => {
-      if (i === 0 && block.length < 80 && blocks.length > 1) {
-        const h = document.createElement('h2');
-        h.textContent = block;
-        box.appendChild(h);
-      } else {
-        const p = document.createElement('p');
-        p.textContent = block;
-        box.appendChild(p);
-      }
-    });
-
+    _renderMarkdownToBox(txt, box);
     applyColor();
     wrapWordsForTTS();
   }
@@ -3296,17 +3421,8 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
   function deaktivirajFokus() {
     const txt = _readerPlainText;
     _fokusReset();
-    // Obnovi normalen prikaz (wrapWordsForTTS se pokliče znotraj setReaderText)
     const box = document.getElementById('readerBox');
-    box.innerHTML = '';
-    const blocks = txt.split(/\n\n+/).map(b => b.replace(/\n/g, ' ').trim()).filter(Boolean);
-    blocks.forEach((block, i) => {
-      if (i === 0 && block.length < 80 && blocks.length > 1) {
-        const h = document.createElement('h2'); h.textContent = block; box.appendChild(h);
-      } else {
-        const p = document.createElement('p'); p.textContent = block; box.appendChild(p);
-      }
-    });
+    _renderMarkdownToBox(txt, box);
     applyColor();
     wrapWordsForTTS();
   }
@@ -3316,26 +3432,59 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     box.innerHTML = '';
     fokusPovedi = [];
     let globalIdx = 0;
-    const blocks = _readerPlainText.split(/\n\n+/).map(b => b.replace(/\n/g, ' ').trim()).filter(Boolean);
-    blocks.forEach((block, bi) => {
-      if (bi === 0 && block.length < 80 && blocks.length > 1) {
-        const h = document.createElement('h2'); h.textContent = block; box.appendChild(h);
-      } else {
-        const p = document.createElement('p');
-        const povedi = razdelNaPovedi(block);
-        povedi.forEach((s, si) => {
-          const span = document.createElement('span');
-          span.className = 'fokus-poved';
-          span.textContent = s + (si < povedi.length - 1 ? ' ' : '');
-          const idx = globalIdx++;
-          span.dataset.idx = idx;
-          span.addEventListener('click', () => { fokusIndeks = idx; _posodobiAktivno(); });
-          p.appendChild(span);
-          fokusPovedi.push(span);
-        });
-        box.appendChild(p);
+
+    const blocks = _readerPlainText.split(/\n\n+/).map(b => b.trim()).filter(Boolean);
+    blocks.forEach(block => {
+      const lines = block.split(/\n/).map(l => l.trim()).filter(Boolean);
+      if (!lines.length) return;
+
+      // Horizontal rule → skip in focus mode
+      if (lines.length === 1 && /^---+$/.test(lines[0])) return;
+
+      // Heading block
+      const hm = _matchHeading(lines[0]);
+      if (hm) {
+        const h = document.createElement('p'); h.className = hm.cls;
+        h.textContent = _stripMarkdown(hm.txt);
+        box.appendChild(h);
+        // Render remaining lines as paragraph if any
+        const rest = lines.slice(1).join(' ');
+        if (rest.trim()) {
+          const cleanRest = _stripMarkdown(rest);
+          const p = document.createElement('p');
+          const povedi = razdelNaPovedi(cleanRest);
+          povedi.forEach((s, si) => {
+            const span = document.createElement('span');
+            span.className = 'fokus-poved';
+            span.textContent = s + (si < povedi.length - 1 ? ' ' : '');
+            const idx = globalIdx++;
+            span.dataset.idx = idx;
+            span.addEventListener('click', () => { fokusIndeks = idx; _posodobiAktivno(); });
+            p.appendChild(span);
+            fokusPovedi.push(span);
+          });
+          box.appendChild(p);
+        }
+        return;
       }
+
+      // List → render as paragraph-like with sentence spans on clean text
+      const cleanBlock = _stripMarkdown(lines.join(' '));
+      const p = document.createElement('p');
+      const povedi = razdelNaPovedi(cleanBlock);
+      povedi.forEach((s, si) => {
+        const span = document.createElement('span');
+        span.className = 'fokus-poved';
+        span.textContent = s + (si < povedi.length - 1 ? ' ' : '');
+        const idx = globalIdx++;
+        span.dataset.idx = idx;
+        span.addEventListener('click', () => { fokusIndeks = idx; _posodobiAktivno(); });
+        p.appendChild(span);
+        fokusPovedi.push(span);
+      });
+      box.appendChild(p);
     });
+
     box.classList.add('fokus-aktiven');
     applyColor();
     _posodobiAktivno();
