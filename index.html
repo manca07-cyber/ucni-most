@@ -1033,6 +1033,72 @@
     body.dark-theme .snov-select-btn { background: #2a2a40; }
     body.dark-theme #slikajSnovNaslovInput { background: #2a2a40; color: #e8e8f0; border-color: #444; }
 
+    /* ── Fokus način (bralno ravnilo) ── */
+    .fokus-poved {
+      cursor: pointer;
+      border-radius: 4px;
+      transition: opacity .25s;
+      display: inline;
+    }
+    .fokus-aktiven .fokus-poved {
+      opacity: 0.3;
+    }
+    .fokus-aktiven .fokus-poved.aktivna {
+      opacity: 1;
+      background: rgba(74, 126, 207, 0.13);
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+    body.dark-theme .fokus-aktiven .fokus-poved.aktivna {
+      background: rgba(74, 126, 207, 0.22);
+    }
+
+    .fokus-nav-bar {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg);
+      border-top: 2px solid var(--panel);
+      padding: 12px 20px;
+      z-index: 200;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 -4px 16px rgba(0,0,0,.10);
+    }
+    .fokus-nav-bar.aktiven { display: flex; }
+
+    .fokus-nav-btn {
+      padding: 14px 28px;
+      border-radius: 30px;
+      border: 2px solid var(--accent);
+      background: #fff;
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+      min-width: 110px;
+    }
+    .fokus-nav-btn:hover:not(:disabled) { background: var(--accent); color: #fff; }
+    .fokus-nav-btn:disabled { opacity: .35; cursor: default; }
+
+    .fokus-nav-counter {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 70px;
+      text-align: center;
+    }
+
+    body.dark-theme .fokus-nav-bar { border-top-color: #333; box-shadow: 0 -4px 20px rgba(0,0,0,.30); }
+    body.dark-theme .fokus-nav-btn { background: #2a2a40; }
+    body.dark-theme .fokus-nav-btn:hover:not(:disabled) { background: var(--accent); color: #fff; }
+
     /* ── Responsive ── */
     @media (max-width: 560px) {
       .reader-box { padding: 20px 18px; }
@@ -1136,6 +1202,7 @@
       <button class="back-btn" style="margin-bottom:0;" onclick="showScreen('screen-home')">← Nazaj na domov</button>
       <button class="back-btn" style="margin-bottom:0; background:var(--accent); color:#fff; border-color:var(--accent);" onclick="showScreen('screen-razumevanje')">🧠 Razumevanje</button>
       <button class="back-btn" style="margin-bottom:0; background:#e67e22; color:#fff; border-color:#e67e22;" onclick="showScreen('screen-ponavljanje')">🔁 Ponavljanje</button>
+      <button class="back-btn" id="btnFokus" style="margin-bottom:0;" onclick="toggleFokus()">🔍 Fokus</button>
     </div>
 
     <!-- Font & sliders -->
@@ -1515,10 +1582,17 @@
 
 </div><!-- /app-wrap -->
 
+<!-- Fokus način – navigacijska vrstica -->
+<div class="fokus-nav-bar" id="fokusNavBar">
+  <button class="fokus-nav-btn" id="fokusNavNazaj" onclick="fokusNazaj()">← Nazaj</button>
+  <span class="fokus-nav-counter" id="fokusNavStev"></span>
+  <button class="fokus-nav-btn" id="fokusNavNaprej" onclick="fokusNaprej()">Naprej →</button>
+</div>
+
 <script>
   // ── Navigation ──
   function showScreen(id) {
-    if (id !== 'screen-reader') stopTTS();
+    if (id !== 'screen-reader') { stopTTS(); _fokusReset(); }
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     if (id === 'screen-saved') renderSavedList();
@@ -1527,6 +1601,12 @@
     if (id === 'screen-snov-teme') renderSnovTeme();
     if (id === 'screen-snov-besedila') renderSnovBesedila();
   }
+
+  // ── Fokus način – stanje ──
+  let fokusAktiven = false;
+  let fokusIndeks  = 0;
+  let fokusPovedi  = [];
+  let _readerPlainText = '';
 
   // ── Color definitions ──
   const PALETTES = {
@@ -1610,6 +1690,8 @@
 
   function setReaderText(txt) {
     stopTTS();
+    _fokusReset();
+    _readerPlainText = txt;
     const box = document.getElementById('readerBox');
     box.innerHTML = '';
 
@@ -3062,6 +3144,141 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     ssZapri();
     alert('Besedilo je shranjeno v šolsko snov! ✅');
   }
+
+  // ══════════════════════════════════════════════
+  // ── Fokus način (bralno ravnilo) ──
+  // ══════════════════════════════════════════════
+
+  function razdelNaPovedi(block) {
+    // Razdeli besedilo na povedi po točki/klicaju/vprašaju/wielokropku
+    try {
+      return block.split(/(?<=[.!?…]+)\s+/).map(s => s.trim()).filter(Boolean);
+    } catch (_) {
+      return [block];
+    }
+  }
+
+  function _fokusReset() {
+    if (!fokusAktiven) return;
+    fokusAktiven = false;
+    fokusPovedi  = [];
+    const box = document.getElementById('readerBox');
+    if (box) box.classList.remove('fokus-aktiven');
+    const bar = document.getElementById('fokusNavBar');
+    if (bar) bar.classList.remove('aktiven');
+    document.body.style.paddingBottom = '';
+    _updateFokusBtn();
+  }
+
+  function toggleFokus() {
+    if (fokusAktiven) {
+      deaktivirajFokus();
+    } else {
+      aktivirajFokus();
+    }
+  }
+
+  function aktivirajFokus() {
+    if (!_readerPlainText) { alert('V bralniku ni besedila.'); return; }
+    stopTTS();
+    fokusAktiven = true;
+    fokusIndeks  = 0;
+    _renderFokusBox();
+    _updateFokusBtn();
+    document.getElementById('fokusNavBar').classList.add('aktiven');
+    document.body.style.paddingBottom = '80px';
+  }
+
+  function deaktivirajFokus() {
+    const txt = _readerPlainText;
+    _fokusReset();
+    // Obnovi normalen prikaz (wrapWordsForTTS se pokliče znotraj setReaderText)
+    const box = document.getElementById('readerBox');
+    box.innerHTML = '';
+    const blocks = txt.split(/\n\n+/).map(b => b.replace(/\n/g, ' ').trim()).filter(Boolean);
+    blocks.forEach((block, i) => {
+      if (i === 0 && block.length < 80 && blocks.length > 1) {
+        const h = document.createElement('h2'); h.textContent = block; box.appendChild(h);
+      } else {
+        const p = document.createElement('p'); p.textContent = block; box.appendChild(p);
+      }
+    });
+    applyColor();
+    wrapWordsForTTS();
+  }
+
+  function _renderFokusBox() {
+    const box = document.getElementById('readerBox');
+    box.innerHTML = '';
+    fokusPovedi = [];
+    let globalIdx = 0;
+    const blocks = _readerPlainText.split(/\n\n+/).map(b => b.replace(/\n/g, ' ').trim()).filter(Boolean);
+    blocks.forEach((block, bi) => {
+      if (bi === 0 && block.length < 80 && blocks.length > 1) {
+        const h = document.createElement('h2'); h.textContent = block; box.appendChild(h);
+      } else {
+        const p = document.createElement('p');
+        const povedi = razdelNaPovedi(block);
+        povedi.forEach((s, si) => {
+          const span = document.createElement('span');
+          span.className = 'fokus-poved';
+          span.textContent = s + (si < povedi.length - 1 ? ' ' : '');
+          const idx = globalIdx++;
+          span.dataset.idx = idx;
+          span.addEventListener('click', () => { fokusIndeks = idx; _posodobiAktivno(); });
+          p.appendChild(span);
+          fokusPovedi.push(span);
+        });
+        box.appendChild(p);
+      }
+    });
+    box.classList.add('fokus-aktiven');
+    applyColor();
+    _posodobiAktivno();
+  }
+
+  function _posodobiAktivno() {
+    fokusPovedi.forEach((s, i) => s.classList.toggle('aktivna', i === fokusIndeks));
+    const aktiven = fokusPovedi[fokusIndeks];
+    if (aktiven) aktiven.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('fokusNavStev').textContent =
+      fokusPovedi.length ? (fokusIndeks + 1) + ' / ' + fokusPovedi.length : '';
+    document.getElementById('fokusNavNazaj').disabled = fokusIndeks === 0;
+    document.getElementById('fokusNavNaprej').disabled = fokusIndeks >= fokusPovedi.length - 1;
+  }
+
+  function fokusNaprej() {
+    if (!fokusAktiven || fokusIndeks >= fokusPovedi.length - 1) return;
+    fokusIndeks++;
+    _posodobiAktivno();
+  }
+
+  function fokusNazaj() {
+    if (!fokusAktiven || fokusIndeks <= 0) return;
+    fokusIndeks--;
+    _posodobiAktivno();
+  }
+
+  function _updateFokusBtn() {
+    const btn = document.getElementById('btnFokus');
+    if (!btn) return;
+    if (fokusAktiven) {
+      btn.textContent = '🔍 Fokus: VKL';
+      btn.style.cssText = 'margin-bottom:0; background:var(--accent); color:#fff; border-color:var(--accent);';
+    } else {
+      btn.textContent = '🔍 Fokus';
+      btn.style.cssText = 'margin-bottom:0;';
+    }
+  }
+
+  // Tipkovnica: puščici gor/dol, Esc
+  document.addEventListener('keydown', function (e) {
+    if (!fokusAktiven) return;
+    if (!document.getElementById('screen-reader').classList.contains('active')) return;
+    if (e.key === 'ArrowDown')  { e.preventDefault(); fokusNaprej(); }
+    if (e.key === 'ArrowUp')    { e.preventDefault(); fokusNazaj(); }
+    if (e.key === 'Escape')     { deaktivirajFokus(); }
+  });
 
   // ── Demo besedilo ──
   const DEMO_TEXT = `Potovanje v deželo čudes
