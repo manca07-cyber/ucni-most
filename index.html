@@ -449,6 +449,49 @@
       margin-bottom: 4px;
     }
 
+    .tts-speed-btns {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .tts-speed-btn {
+      flex: 1;
+      padding: 12px 8px;
+      font-size: .95rem;
+      font-family: inherit;
+      border: 2px solid #c8d8e8;
+      border-radius: 10px;
+      background: #f0f5fa;
+      color: #4a6080;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s;
+      min-height: 44px;
+    }
+    .tts-speed-btn:hover {
+      background: #daeaf7;
+      border-color: #a0bdd8;
+    }
+    .tts-speed-btn.tts-speed-active {
+      background: #3498db;
+      border-color: #2980b9;
+      color: #fff;
+      font-weight: 600;
+    }
+    body.dark-theme .tts-speed-btn {
+      background: #2a3a4a;
+      border-color: #3a5060;
+      color: #a8c0d0;
+    }
+    body.dark-theme .tts-speed-btn:hover {
+      background: #354a5a;
+    }
+    body.dark-theme .tts-speed-btn.tts-speed-active {
+      background: #2980b9;
+      border-color: #3498db;
+      color: #fff;
+    }
+
     .tts-note {
       font-size: .75rem;
       color: #999;
@@ -1280,10 +1323,11 @@
       </div>
 
       <div class="tts-speed-row ctrl-group">
-        <label for="ttsSpeed">Hitrost branja</label>
-        <div class="slider-wrap">
-          <input type="range" id="ttsSpeed" min="0.5" max="2" step="0.1" value="1" />
-          <span class="slider-val" id="ttsSpeedVal">1.0×</span>
+        <label>Hitrost branja</label>
+        <div class="tts-speed-btns">
+          <button class="tts-speed-btn" id="ttsSpeedSlow"   onclick="setTTSSpeed(0.8)">Počasi</button>
+          <button class="tts-speed-btn tts-speed-active" id="ttsSpeedNormal" onclick="setTTSSpeed(1.0)">Normalno</button>
+          <button class="tts-speed-btn" id="ttsSpeedFast"   onclick="setTTSSpeed(1.2)">Hitro</button>
         </div>
       </div>
 
@@ -1894,7 +1938,7 @@
     window.speechSynthesis.cancel();
     const utt = new SpeechSynthesisUtterance(tekst);
     utt.lang = 'sl-SI';
-    utt.rate = parseFloat(document.getElementById('ttsSpeed').value);
+    utt.rate = ttsSpeedRate;
     utt.onend  = onEnd;
     utt.onerror = onEnd;
     window.speechSynthesis.speak(utt);
@@ -1902,7 +1946,8 @@
 
   async function playTTS() {
     if (ttsState === 'paused' && ttsAudio) {
-      ttsAudio.playbackRate = parseFloat(document.getElementById('ttsSpeed').value);
+      _applyPreservesPitch(ttsAudio);
+      ttsAudio.playbackRate = ttsSpeedRate;
       ttsAudio.play();
       ttsState = 'playing';
       updateTTSButtons();
@@ -1922,7 +1967,8 @@
       _freeTtsAudio();
       ttsAudio    = audio;
       ttsAudioUrl = url;
-      ttsAudio.playbackRate = parseFloat(document.getElementById('ttsSpeed').value);
+      _applyPreservesPitch(ttsAudio);
+      ttsAudio.playbackRate = ttsSpeedRate;
 
       ttsAudio.onended = () => {
         ttsState = 'stopped';
@@ -1975,11 +2021,39 @@
     updateTTSButtons();
   }
 
-  // Hitrost – posodobi predvajanje v živo, če že teče
-  document.getElementById('ttsSpeed').addEventListener('input', function () {
-    document.getElementById('ttsSpeedVal').textContent = parseFloat(this.value).toFixed(1) + '×';
-    if (ttsAudio) ttsAudio.playbackRate = parseFloat(this.value);
-  });
+  // Hitrost – tri tipke (Počasi 0.8 / Normalno 1.0 / Hitro 1.2)
+  let ttsSpeedRate = parseFloat(localStorage.getItem('ucni_most_tts_speed') || '1.0');
+
+  function _applyPreservesPitch(audio) {
+    audio.preservesPitch      = true;
+    audio.webkitPreservesPitch = true;
+    audio.mozPreservesPitch    = true;
+  }
+
+  function setTTSSpeed(rate) {
+    ttsSpeedRate = rate;
+    localStorage.setItem('ucni_most_tts_speed', String(rate));
+    ['ttsSpeedSlow','ttsSpeedNormal','ttsSpeedFast'].forEach(id => {
+      document.getElementById(id).classList.remove('tts-speed-active');
+    });
+    const idMap = { 0.8: 'ttsSpeedSlow', 1.0: 'ttsSpeedNormal', 1.2: 'ttsSpeedFast' };
+    const btnId = idMap[rate];
+    if (btnId) document.getElementById(btnId).classList.add('tts-speed-active');
+    if (ttsAudio) {
+      _applyPreservesPitch(ttsAudio);
+      ttsAudio.playbackRate = rate;
+    }
+  }
+
+  // Ob nalaganju strani obnovi shranjeno hitrost
+  (function initTTSSpeed() {
+    const idMap = { 0.8: 'ttsSpeedSlow', 1.0: 'ttsSpeedNormal', 1.2: 'ttsSpeedFast' };
+    ['ttsSpeedSlow','ttsSpeedNormal','ttsSpeedFast'].forEach(id => {
+      document.getElementById(id).classList.remove('tts-speed-active');
+    });
+    const btnId = idMap[ttsSpeedRate] || 'ttsSpeedNormal';
+    document.getElementById(btnId).classList.add('tts-speed-active');
+  })();
 
   // ══════════════════════════════════════════════
   // ── Razumevanje – AI klici ──
