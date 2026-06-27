@@ -1974,8 +1974,7 @@
   function renderReader() {
     const box = document.getElementById('readerBox');
     if (fokusAktiven) {
-      _renderFokusBox();                 // fokus sam upošteva zloge
-      ttsUtteranceText = _ttsCleanText();
+      _renderFokusBox();                 // fokus sam upošteva zloge in nastavi ttsUtteranceText + ttsWordSpans
     } else if (_zlogiAktiven && _zlogiAnnotated) {
       _zlogiRender = true;
       _renderMarkdownToBox(_zlogiAnnotated, box);
@@ -2210,6 +2209,9 @@
   let ttsWordTimes = [];
   let ttsCurrentWordIdx = -1;
   let ttsHasAlignment = false;
+  // Pripisi beseda→poved za fokus način (parallel z ttsWordSpans / ttsWordTimes).
+  // Vrednost -1 pomeni, da beseda ni del nobene povedi (npr. naslov).
+  let ttsWordToPoved = [];
 
   function _b64ToUint8(b64) {
     const bin = atob(b64);
@@ -2286,6 +2288,20 @@
       ttsWordTimes[idx].span.classList.add('tts-active');
     }
     ttsCurrentWordIdx = idx;
+
+    // Samodejno sledenje povedi v fokus načinu: če je trenutna izgovorjena
+    // beseda znotraj druge povedi, premakni fokus nanjo. Spoštuje obstoječi
+    // izris in scroll. Če pripisa beseda→poved ni (npr. brez alignmenta ali
+    // pri brskalniškem TTS), se to varno preskoči.
+    if (fokusAktiven && idx >= 0
+        && Array.isArray(ttsWordToPoved)
+        && ttsWordToPoved.length === ttsWordTimes.length) {
+      const povedIdx = ttsWordToPoved[idx];
+      if (povedIdx >= 0 && povedIdx < fokusPovedi.length && povedIdx !== fokusIndeks) {
+        fokusIndeks = povedIdx;
+        _posodobiAktivno();
+      }
+    }
   }
 
   function updateTTSButtons() {
@@ -3711,6 +3727,7 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     if (!fokusAktiven) return;
     fokusAktiven = false;
     fokusPovedi  = [];
+    ttsWordToPoved = [];
     const box = document.getElementById('readerBox');
     if (box) box.classList.remove('fokus-aktiven');
     const bar = document.getElementById('fokusNavBar');
@@ -3743,6 +3760,38 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     renderReader();   // ponovni izris običajnega načina (upošteva zloge)
   }
 
+  // Začasna stanja, ki jih napolni _renderFokusBox za samodejno sledenje
+  // glasu med branjem (povezuje besede z njihovo povedjo in zbira besedilo
+  // za TTS točno v vrstnem redu izrisanih besed v fokus načinu).
+  let _fokusBuildWordSpans = null;   // [{ el, povedIdx }]
+  let _fokusBuildUtterance = '';
+
+  // Razbije besedilo na besede in jih zavije v .tts-word spane. Znotraj
+  // vsakega .tts-word spana se po potrebi izriše barvne zloge. Ohranja
+  // presledke kot navadno besedilo, da postavitev ostane nedotaknjena.
+  function _fokusWrapWords(parent, text, useZlogi, povedIdx) {
+    const tokens = text.split(/(\s+)/);
+    for (const token of tokens) {
+      if (!token) continue;
+      if (/\S/.test(token)) {
+        const w = document.createElement('span');
+        w.className = 'tts-word';
+        if (useZlogi) _appendZlogiText(w, token);
+        else w.appendChild(document.createTextNode(token));
+        parent.appendChild(w);
+        if (_fokusBuildWordSpans) {
+          _fokusBuildWordSpans.push({ el: w, povedIdx: povedIdx });
+        }
+        // V utterance gre čista različica brez | znakov (znak | je zgolj
+        // notranji ločilnik zlogov v _zlogiAnnotated).
+        _fokusBuildUtterance += useZlogi ? token.replace(/\|/g, '') : token;
+      } else {
+        parent.appendChild(document.createTextNode(token));
+        _fokusBuildUtterance += token;
+      }
+    }
+  }
+
   // Doda poved (eno ali več) kot klikljive fokus-spane; če so zlogi vklopljeni,
   // se besedilo izriše z barvnimi zlogi. Vrne posodobljen globalni indeks.
   function _fokusDodajPovedi(box, cleanText, useZlogi, globalIdx) {
@@ -3751,16 +3800,21 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     povedi.forEach((s, si) => {
       const span = document.createElement('span');
       span.className = 'fokus-poved';
-      if (useZlogi) _appendZlogiText(span, s);
-      else span.appendChild(document.createTextNode(s));
-      if (si < povedi.length - 1) span.appendChild(document.createTextNode(' '));
       const idx = globalIdx++;
+      _fokusWrapWords(span, s, useZlogi, idx);
+      if (si < povedi.length - 1) {
+        span.appendChild(document.createTextNode(' '));
+        _fokusBuildUtterance += ' ';
+      }
       span.dataset.idx = idx;
       span.addEventListener('click', () => { fokusIndeks = idx; _posodobiAktivno(); });
       p.appendChild(span);
       fokusPovedi.push(span);
     });
     box.appendChild(p);
+    // Med ločenimi paragrafi dodaj presledek v utterance, da se zadnja
+    // beseda enega bloka ne zlije z začetkom naslednjega.
+    _fokusBuildUtterance += ' ';
     return globalIdx;
   }
 
@@ -3769,6 +3823,10 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     box.innerHTML = '';
     fokusPovedi = [];
     let globalIdx = 0;
+
+    // Pripravi zbiralnika za samodejno sledenje glasu (besede + utterance).
+    _fokusBuildWordSpans = [];
+    _fokusBuildUtterance = '';
 
     // Vir: če so zlogi vklopljeni, uporabi z | označeno besedilo (znak | je
     // znotraj besed, zato ne moti delitve na povedi). Sicer čisto besedilo.
@@ -3788,9 +3846,11 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
       if (hm) {
         const h = document.createElement('p'); h.className = hm.cls;
         const naslov = _stripMarkdown(hm.txt);
-        if (useZlogi) _appendZlogiText(h, naslov);
-        else h.textContent = naslov;
+        // Naslov ni "poved" v fokus načinu, vendar ga TTS prebere, zato
+        // moramo besede zaviti za pravilen alignment (povedIdx = -1).
+        _fokusWrapWords(h, naslov, useZlogi, -1);
         box.appendChild(h);
+        _fokusBuildUtterance += ' ';
         // Render remaining lines as paragraph if any
         const rest = lines.slice(1).join(' ');
         if (rest.trim()) {
@@ -3803,6 +3863,16 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
       const cleanBlock = _stripMarkdown(lines.join(' '));
       globalIdx = _fokusDodajPovedi(box, cleanBlock, useZlogi, globalIdx);
     });
+
+    // Prevezi sledenje besed za TTS na nove fokus-spane. ttsUtteranceText
+    // gradimo neposredno iz tukaj izrisanih besed, da je zagotovljeno
+    // ujemanje števila besed z alignmentom (sicer _buildTTSWordTimes varno
+    // odpove in ostane samo ročno sledenje).
+    ttsWordSpans = _fokusBuildWordSpans.map(w => ({ el: w.el, start: 0 }));
+    ttsWordToPoved = _fokusBuildWordSpans.map(w => w.povedIdx);
+    ttsUtteranceText = _fokusBuildUtterance.replace(/\s+/g, ' ').trim();
+    _fokusBuildWordSpans = null;
+    _fokusBuildUtterance = '';
 
     box.classList.add('fokus-aktiven');
     applyColor();
