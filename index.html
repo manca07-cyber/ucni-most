@@ -1199,6 +1199,134 @@
     body.dark-theme .reader-box .zlog-0 { color: #6bb6ea; }
     body.dark-theme .reader-box .zlog-1 { color: #eaa15f; }
 
+    /* ── Dotik besede – popup ── */
+    .dotik-popup {
+      position: fixed;
+      z-index: 300;
+      background: var(--bg);
+      color: var(--text);
+      border: 2px solid var(--accent);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 28px rgba(0,0,0,.22);
+      padding: 16px 18px 18px;
+      width: min(340px, calc(100vw - 16px));
+      max-width: calc(100vw - 16px);
+      max-height: calc(100vh - 16px);
+      overflow: auto;
+      font-family: inherit;
+    }
+    body.dark-theme .dotik-popup {
+      background: #2a2a40;
+      color: #e8e8f0;
+    }
+    .dotik-close {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      background: none;
+      border: none;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #888;
+      cursor: pointer;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      line-height: 1;
+      padding: 0;
+    }
+    .dotik-close:hover { background: rgba(0,0,0,.08); color: var(--text); }
+    body.dark-theme .dotik-close:hover { background: rgba(255,255,255,.10); color: #e8e8f0; }
+
+    .dotik-word {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-align: center;
+      padding: 4px 32px 12px;
+      word-break: break-word;
+      line-height: 1.3;
+    }
+    .dotik-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .dotik-btn {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 12px;
+      border: none;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      min-height: 56px;
+      transition: opacity .15s, transform .1s, background .2s;
+    }
+    .dotik-btn:active:not(:disabled) { transform: scale(.97); }
+    .dotik-btn:disabled { opacity: .6; cursor: default; }
+    .dotik-btn-listen  { background: #27ae60; }
+    .dotik-btn-listen:hover:not(:disabled)  { background: #219a52; }
+    .dotik-btn-explain { background: #e67e22; }
+    .dotik-btn-explain:hover:not(:disabled) { background: #cf6d17; }
+    .dotik-icon { font-size: 1.25rem; line-height: 1; }
+
+    .dotik-content { margin-top: 14px; }
+    .dotik-loading {
+      background: var(--panel);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: .95rem;
+      color: var(--text);
+      text-align: center;
+      font-style: italic;
+    }
+    .dotik-badge {
+      display: inline-block;
+      background: #fff3cd;
+      color: #856404;
+      border: 1.5px solid #ffc107;
+      border-radius: 16px;
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      margin-bottom: 8px;
+    }
+    body.dark-theme .dotik-badge {
+      background: #3a2f00;
+      color: #ffd54f;
+      border-color: #f0a500;
+    }
+    .dotik-razlaga {
+      font-size: 1rem;
+      line-height: 1.55;
+      color: var(--text);
+      background: var(--panel);
+      border-radius: 10px;
+      padding: 12px 14px;
+      border-left: 4px solid var(--accent);
+      white-space: pre-wrap;
+    }
+    .dotik-error {
+      background: #fdecea;
+      color: #c0392b;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: .92rem;
+      font-weight: 600;
+    }
+    body.dark-theme .dotik-error {
+      background: #3a0f0a;
+      color: #f1948a;
+    }
+
     /* ── Responsive ── */
     @media (max-width: 560px) {
       .reader-box { padding: 20px 18px; }
@@ -1304,6 +1432,7 @@
       <button class="back-btn" style="margin-bottom:0; background:#e67e22; color:#fff; border-color:#e67e22;" onclick="showScreen('screen-ponavljanje')">🔁 Ponavljanje</button>
       <button class="back-btn" id="btnFokus" style="margin-bottom:0;" onclick="toggleFokus()">🔍 Fokus</button>
       <button class="back-btn" id="btnZlogi" style="margin-bottom:0;" onclick="toggleZlogi()">🎨 Zlogi</button>
+      <button class="back-btn" id="btnDotik" style="margin-bottom:0;" onclick="toggleDotikBesede()">👆 Dotik besede</button>
     </div>
 
     <!-- Font & sliders -->
@@ -1695,6 +1824,7 @@
   // ── Navigation ──
   function showScreen(id) {
     if (id !== 'screen-reader') { stopTTS(); _fokusReset(); }
+    if (typeof _dotikZapri === 'function') _dotikZapri();
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     if (id === 'screen-saved') renderSavedList();
@@ -1915,6 +2045,7 @@
   function setReaderText(txt) {
     stopTTS();
     _fokusReset();
+    if (typeof _dotikZapri === 'function') _dotikZapri();
     _readerPlainText = txt;
     // Novo besedilo → ponastavi zloge (predpomnilnik velja samo za trenutno besedilo)
     _zlogiAktiven = false;
@@ -2159,6 +2290,7 @@
 
   // Besede v readerBox zavijemo v <span class="tts-word"> (za morebitno označevanje)
   function wrapWordsForTTS() {
+    if (typeof _dotikZapri === 'function') _dotikZapri();
     const box = document.getElementById('readerBox');
     box.querySelectorAll('.tts-word').forEach(span => {
       span.parentNode.replaceChild(document.createTextNode(span.textContent), span);
@@ -3819,6 +3951,7 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
   }
 
   function _renderFokusBox() {
+    if (typeof _dotikZapri === 'function') _dotikZapri();
     const box = document.getElementById('readerBox');
     box.innerHTML = '';
     fokusPovedi = [];
@@ -3921,6 +4054,341 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     if (e.key === 'ArrowUp')    { e.preventDefault(); fokusNazaj(); }
     if (e.key === 'Escape')     { deaktivirajFokus(); }
   });
+
+  // ══════════════════════════════════════════════
+  // ── Dotik besede ──
+  // ══════════════════════════════════════════════
+
+  let _dotikAktiven = false;
+  const _dotikAudioCache   = new Map(); // ključ (mala beseda) → Blob (mp3)
+  const _dotikRazlagaCache = new Map(); // ključ (mala beseda) → string
+  let _dotikCurrentAudio    = null;
+  let _dotikCurrentAudioUrl = null;
+  let _dotikAudioAbort      = null;
+  let _dotikRazlagaAbort    = null;
+  let _dotikPopupEl         = null;
+
+  function _dotikCleanWord(raw) {
+    if (!raw) return '';
+    let w = String(raw).replace(/\|/g, '');           // brez znakov za zloge
+    w = w.replace(/[*_`]+/g, '');                      // brez markdown oznak
+    // Odstrani robna ločila (vse, kar ni črka/številka)
+    w = w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
+    return w;
+  }
+
+  function _dotikEscRe(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function _dotikNormalizeText(s) {
+    return String(s || '').replace(/\|/g, '').replace(/\s+/g, ' ').trim();
+  }
+
+  // Poved, v kateri se beseda nahaja — za boljšo razlago AI.
+  function _dotikFindContext(wordSpan, cleanWord) {
+    if (!wordSpan) return '';
+    const povedSpan = wordSpan.closest && wordSpan.closest('.fokus-poved');
+    if (povedSpan) return _dotikNormalizeText(povedSpan.textContent);
+    const block = wordSpan.closest && wordSpan.closest('p, li, h1, h2, h3, h4');
+    if (!block) return '';
+    const txt = _dotikNormalizeText(block.textContent);
+    if (!cleanWord) return txt.slice(0, 300);
+    let povedi;
+    try { povedi = txt.split(/(?<=[.!?…]+)\s+/); }
+    catch (_) { povedi = [txt]; }
+    const re = new RegExp('(?:^|[^\\p{L}\\p{N}])' + _dotikEscRe(cleanWord) + '(?:[^\\p{L}\\p{N}]|$)', 'iu');
+    for (const p of povedi) { if (re.test(p)) return p.trim(); }
+    return txt.slice(0, 300);
+  }
+
+  function _updateDotikBtn() {
+    const btn = document.getElementById('btnDotik');
+    if (!btn) return;
+    if (_dotikAktiven) {
+      btn.textContent = '👆 Dotik besede: VKL';
+      btn.style.cssText = 'margin-bottom:0; background:var(--accent); color:#fff; border-color:var(--accent);';
+    } else {
+      btn.textContent = '👆 Dotik besede';
+      btn.style.cssText = 'margin-bottom:0;';
+    }
+  }
+
+  function toggleDotikBesede() {
+    _dotikAktiven = !_dotikAktiven;
+    _updateDotikBtn();
+    if (!_dotikAktiven) _dotikZapri();
+  }
+
+  function _dotikStopAudio() {
+    if (_dotikAudioAbort) { try { _dotikAudioAbort.abort(); } catch(_){} _dotikAudioAbort = null; }
+    if (_dotikCurrentAudio) {
+      try { _dotikCurrentAudio.pause(); _dotikCurrentAudio.src = ''; } catch(_){}
+      _dotikCurrentAudio = null;
+    }
+    if (_dotikCurrentAudioUrl) {
+      try { URL.revokeObjectURL(_dotikCurrentAudioUrl); } catch(_){}
+      _dotikCurrentAudioUrl = null;
+    }
+  }
+
+  function _dotikZapri() {
+    _dotikStopAudio();
+    if (_dotikRazlagaAbort) { try { _dotikRazlagaAbort.abort(); } catch(_){} _dotikRazlagaAbort = null; }
+    if (_dotikPopupEl) {
+      _dotikPopupEl.remove();
+      _dotikPopupEl = null;
+    }
+  }
+
+  function _dotikPostavi(popup, anchorEl) {
+    // Najprej pomeri popup
+    popup.style.left = '0px';
+    popup.style.top  = '-9999px';
+    const rect = anchorEl.getBoundingClientRect();
+    const pw = popup.offsetWidth;
+    const ph = popup.offsetHeight;
+    const vw = window.innerWidth  || document.documentElement.clientWidth;
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    const m = 8;
+
+    // Vodoravno: centriraj nad besedo, vendar znotraj okna
+    let left = rect.left + rect.width / 2 - pw / 2;
+    if (left + pw > vw - m) left = vw - m - pw;
+    if (left < m) left = m;
+
+    // Navpično: privzeto pod besedo, sicer nad
+    let top = rect.bottom + m;
+    if (top + ph > vh - m) {
+      const aboveTop = rect.top - m - ph;
+      if (aboveTop >= m) top = aboveTop;
+      else top = Math.max(m, vh - m - ph);
+    }
+    popup.style.left = left + 'px';
+    popup.style.top  = top  + 'px';
+  }
+
+  function _dotikOdpriPopup(wordSpan) {
+    // Pred predvajanjem morebitnega zvoka ustavi tekoče branje besedila
+    try { stopTTS(); } catch(_) {}
+
+    const cleanWord = _dotikCleanWord(wordSpan.textContent);
+    if (!cleanWord) return;
+    _dotikZapri();
+
+    const popup = document.createElement('div');
+    popup.className = 'dotik-popup';
+    popup.innerHTML =
+      '<button class="dotik-close" type="button" aria-label="Zapri">×</button>' +
+      '<div class="dotik-word"></div>' +
+      '<div class="dotik-buttons">' +
+        '<button class="dotik-btn dotik-btn-listen" type="button">' +
+          '<span class="dotik-icon">🔊</span><span>Poslušaj</span>' +
+        '</button>' +
+        '<button class="dotik-btn dotik-btn-explain" type="button">' +
+          '<span class="dotik-icon">💡</span><span>Razloži</span>' +
+        '</button>' +
+      '</div>' +
+      '<div class="dotik-content" style="display:none;"></div>';
+
+    popup.querySelector('.dotik-word').textContent = cleanWord;
+    document.body.appendChild(popup);
+    _dotikPopupEl = popup;
+    _dotikPostavi(popup, wordSpan);
+
+    popup.querySelector('.dotik-close').addEventListener('click', _dotikZapri);
+
+    const btnListen  = popup.querySelector('.dotik-btn-listen');
+    const btnExplain = popup.querySelector('.dotik-btn-explain');
+    const content    = popup.querySelector('.dotik-content');
+
+    btnListen.addEventListener('click', () => _dotikPredvajaj(cleanWord, btnListen, content));
+    btnExplain.addEventListener('click', () => _dotikRazlozi(cleanWord, wordSpan, btnExplain, content));
+  }
+
+  function _dotikPredvajajBlob(blob) {
+    _dotikStopAudio();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    _dotikCurrentAudio    = audio;
+    _dotikCurrentAudioUrl = url;
+    const cleanup = () => {
+      if (_dotikCurrentAudio === audio) {
+        if (_dotikCurrentAudioUrl) { try { URL.revokeObjectURL(_dotikCurrentAudioUrl); } catch(_){} _dotikCurrentAudioUrl = null; }
+        _dotikCurrentAudio = null;
+      }
+    };
+    audio.onended = cleanup;
+    audio.onerror = cleanup;
+    audio.play().catch(cleanup);
+  }
+
+  async function _dotikPredvajaj(beseda, btn, content) {
+    // Ustavi morebitno tekoče branje besedila ali prejšnji klic za besedo
+    try { stopTTS(); } catch(_) {}
+    _dotikStopAudio();
+
+    const key = beseda.toLowerCase();
+    const cached = _dotikAudioCache.get(key);
+    if (cached) { _dotikPredvajajBlob(cached); return; }
+
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="dotik-icon">⏳</span><span>nalagam …</span>';
+    _dotikAudioAbort = new AbortController();
+
+    try {
+      const resp = await fetch(GOVOR_URL, {
+        method: 'POST',
+        signal: _dotikAudioAbort.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ besedilo: beseda }),
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+      const ct = (resp.headers.get('Content-Type') || '').toLowerCase();
+      let blob = null;
+      if (ct.includes('application/json')) {
+        const data = await resp.json();
+        if (data && typeof data.audio_base64 === 'string' && data.audio_base64) {
+          const bytes = _b64ToUint8(data.audio_base64);
+          blob = new Blob([bytes], { type: 'audio/mpeg' });
+        } else {
+          throw new Error('brez zvoka');
+        }
+      } else {
+        blob = await resp.blob();
+      }
+      _dotikAudioCache.set(key, blob);
+      _dotikPredvajajBlob(blob);
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+      _dotikPokaziNapako(content, 'Tega trenutno ne morem prebrati.');
+    } finally {
+      if (_dotikAudioAbort) _dotikAudioAbort = null;
+      if (btn && document.body.contains(btn)) {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+      }
+    }
+  }
+
+  async function _dotikRazlozi(beseda, wordSpan, btn, content) {
+    const key = beseda.toLowerCase();
+    const cached = _dotikRazlagaCache.get(key);
+    if (cached) { _dotikPokaziRazlago(content, cached); return; }
+
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="dotik-icon">⏳</span><span>nalagam …</span>';
+    content.style.display = 'block';
+    content.innerHTML = '<div class="dotik-loading">nalagam …</div>';
+
+    if (_dotikRazlagaAbort) { try { _dotikRazlagaAbort.abort(); } catch(_){} }
+    _dotikRazlagaAbort = new AbortController();
+
+    const kontekst = _dotikFindContext(wordSpan, beseda);
+    const navodilo = 'Razloži pomen besede "' + beseda + '" v slovenščini. ' +
+      'Napiši samo eno ali dve preprosti povedi, primerni za otroka z disleksijo (okoli 10 let). ' +
+      'Brez težkih besed, brez uvoda, brez ponavljanja besede v narekovajih. ' +
+      'Razlaga naj se nanaša izključno na to besedo. Ne prevajaj v druge jezike.';
+    const vsebina = 'Beseda: ' + beseda + (kontekst ? '\nPoved (kontekst): ' + kontekst : '');
+
+    try {
+      const resp = await fetch(SUPABASE_URL, {
+        method: 'POST',
+        signal: _dotikRazlagaAbort.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ besedilo: vsebina, navodilo }),
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      let rezultat = data.rezultat || data.result || data.odgovor || '';
+      if (!rezultat) {
+        const raw = data.text || data.content || '';
+        if (Array.isArray(raw)) rezultat = raw.filter(b => b.type === 'text').map(b => b.text).join('\n');
+        else rezultat = raw;
+      }
+      rezultat = String(rezultat || '').trim();
+      if (!rezultat) throw new Error('prazno');
+      _dotikRazlagaCache.set(key, rezultat);
+      _dotikPokaziRazlago(content, rezultat);
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+      _dotikPokaziNapako(content, 'Tega trenutno ne morem razložiti.');
+    } finally {
+      if (_dotikRazlagaAbort) _dotikRazlagaAbort = null;
+      if (btn && document.body.contains(btn)) {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+      }
+      // Po dodajanju razlage se popup lahko razširi — po potrebi prerazporedi
+      if (_dotikPopupEl) {
+        // Ne premikamo več glede na sidro (lahko bi šel ven), ampak preveri,
+        // da popup ne sega čez spodnji rob; če sega, prilepi se na rob.
+        const r = _dotikPopupEl.getBoundingClientRect();
+        const vh = window.innerHeight || document.documentElement.clientHeight;
+        if (r.bottom > vh - 8) {
+          const newTop = Math.max(8, vh - 8 - r.height);
+          _dotikPopupEl.style.top = newTop + 'px';
+        }
+      }
+    }
+  }
+
+  function _dotikPokaziRazlago(content, txt) {
+    content.style.display = 'block';
+    content.innerHTML = '';
+    const badge = document.createElement('div');
+    badge.className = 'dotik-badge';
+    badge.textContent = '⚠️ nepreverjeno';
+    content.appendChild(badge);
+    const body = document.createElement('div');
+    body.className = 'dotik-razlaga';
+    body.textContent = txt;
+    content.appendChild(body);
+  }
+
+  function _dotikPokaziNapako(content, msg) {
+    content.style.display = 'block';
+    content.innerHTML = '';
+    const body = document.createElement('div');
+    body.className = 'dotik-error';
+    body.textContent = msg;
+    content.appendChild(body);
+  }
+
+  // Globalni klik – captureb phase: ko je "Dotik besede" vklopljen, ima
+  // dotik besede prednost pred fokus načinom (stopPropagation prepreči
+  // sočasno premikanje fokusa).
+  document.addEventListener('click', function (e) {
+    if (!_dotikAktiven) {
+      // Tudi če ni aktiven, popup ne bi smel biti odprt – varnostna ničla.
+      if (_dotikPopupEl && !_dotikPopupEl.contains(e.target)) _dotikZapri();
+      return;
+    }
+    const wordSpan = e.target && e.target.closest ? e.target.closest('.tts-word') : null;
+    const box = document.getElementById('readerBox');
+    if (wordSpan && box && box.contains(wordSpan)) {
+      e.stopPropagation();
+      e.preventDefault();
+      _dotikOdpriPopup(wordSpan);
+      return;
+    }
+    // Klik izven besede in izven popupa zapre okno
+    if (_dotikPopupEl && !_dotikPopupEl.contains(e.target)) {
+      _dotikZapri();
+    }
+  }, true);
+
+  // Pri spremembi velikosti okna se popup lahko znajde izven zaslona – zaprimo
+  window.addEventListener('resize', function () { if (_dotikPopupEl) _dotikZapri(); });
 
   // ── Demo besedilo ──
   const DEMO_TEXT = `Potovanje v deželo čudes
