@@ -1,95 +1,3852 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Učni Most – Bralnik</title>
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/opendyslexic@0.91.12/opendyslexic/opendyslexic-regular.css" />
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --panel: #f3f3f3;
+      --accent: #4a7ecf;
+      --accent-hover: #3a6ab8;
+      --text: #1a1a2e;
+      --radius: 14px;
+      --shadow: 0 2px 12px rgba(0,0,0,.10);
+      --font: 'Lexend', sans-serif;
+      --fs: 20px;
+      --lh: 1.8;
+      --ls: 0.02em;
+    }
+
+    body {
+      font-family: var(--font);
+      font-size: var(--fs);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background .3s, color .3s;
+    }
+
+    /* ── Layout ── */
+    .app-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: .04em;
+    }
+    header p {
+      font-size: 1rem;
+      color: #555;
+      margin-top: 4px;
+    }
+
+    /* ── Screens ── */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ── Back button ── */
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: none;
+      border: 2px solid var(--accent);
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 30px;
+      cursor: pointer;
+      margin-bottom: 28px;
+      transition: background .2s, color .2s;
+    }
+    .back-btn:hover { background: var(--accent); color: #fff; }
+
+    /* ── Home screen ── */
+    .home-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+      margin-top: 8px;
+    }
+
+    .home-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 36px 24px;
+      border-radius: var(--radius);
+      border: none;
+      font-family: inherit;
+      font-size: 1.15rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+      box-shadow: var(--shadow);
+      text-align: center;
+      line-height: 1.3;
+    }
+    .home-btn:hover:not(.disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0,0,0,.14);
+    }
+    .home-btn .btn-icon {
+      font-size: 2.4rem;
+      line-height: 1;
+    }
+
+    .home-btn.primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .home-btn.secondary {
+      background: var(--panel);
+      color: var(--text);
+    }
+    .home-btn.disabled {
+      background: #f0f0f0;
+      color: #aaa;
+      cursor: default;
+      box-shadow: none;
+    }
+    .soon-badge {
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      background: #ddd;
+      color: #888;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    /* ── Paste screen ── */
+    .paste-area {
+      width: 100%;
+      min-height: 240px;
+      padding: 18px;
+      font-family: inherit;
+      font-size: 1rem;
+      line-height: 1.7;
+      border: 2px solid #ccc;
+      border-radius: var(--radius);
+      resize: vertical;
+      background: #fff;
+      color: var(--text);
+      transition: border-color .2s;
+      margin-bottom: 16px;
+    }
+    .paste-area:focus { outline: none; border-color: var(--accent); }
+
+    .action-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      padding: 14px 32px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 30px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+
+    .btn-secondary {
+      padding: 14px 32px;
+      background: none;
+      color: var(--accent);
+      border: 2px solid var(--accent);
+      border-radius: 30px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+    }
+    .btn-secondary:hover { background: var(--accent); color: #fff; }
+
+    /* ── Saved texts screen ── */
+    .saved-empty {
+      text-align: center;
+      color: #888;
+      font-size: 1rem;
+      margin-top: 40px;
+    }
+
+    .saved-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .saved-item {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .saved-item-info {
+      flex: 1;
+      overflow: hidden;
+    }
+    .saved-item-title {
+      font-weight: 700;
+      font-size: 1rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .saved-item-meta {
+      font-size: .82rem;
+      color: #888;
+      margin-top: 3px;
+    }
+    .saved-item-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .icon-btn {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 2px solid transparent;
+      font-family: inherit;
+      font-size: .88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s, color .2s, border-color .2s;
+    }
+    .icon-btn.open {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .icon-btn.open:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .icon-btn.del {
+      background: none;
+      color: #c0392b;
+      border-color: #c0392b;
+    }
+    .icon-btn.del:hover { background: #c0392b; color: #fff; }
+
+    /* ── Control panel ── */
+    .panel {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 20px 24px 24px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow);
+    }
+    .panel-title {
+      font-size: .78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: #888;
+      margin-bottom: 14px;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    .ctrl-group label {
+      display: block;
+      font-size: .9rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    /* Select */
+    select {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 1rem;
+      font-family: inherit;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      background: #fff;
+      color: var(--text);
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%23555' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      cursor: pointer;
+      transition: border-color .2s;
+    }
+    select:focus { outline: none; border-color: var(--accent); }
+
+    /* Slider */
+    .slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    input[type=range] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 8px;
+      border-radius: 4px;
+      background: #ccc;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,.2);
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: none;
+    }
+    .slider-val {
+      min-width: 44px;
+      text-align: right;
+      font-size: .9rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* ── Color picker panel ── */
+    .color-panel {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 20px 24px 24px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow);
+    }
+
+    .color-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .color-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      cursor: pointer;
+      transition: transform .15s, border-color .15s;
+      position: relative;
+    }
+    .color-btn:hover { transform: scale(1.12); }
+    .color-btn.active { border-color: var(--accent); }
+    .color-btn[data-color="dark"] {
+      background: #1a1a2e;
+    }
+
+    .intensity-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .intensity-btn {
+      padding: 9px 20px;
+      border-radius: 30px;
+      border: 2px solid #ccc;
+      background: #fff;
+      font-family: inherit;
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s, border-color .2s, color .2s;
+    }
+    .intensity-btn:hover { border-color: var(--accent); }
+    .intensity-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* ── TTS panel ── */
+    .tts-panel {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 20px 24px 24px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow);
+    }
+
+    .tts-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .tts-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 28px;
+      border: none;
+      border-radius: 30px;
+      font-family: inherit;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, color .2s, opacity .2s, transform .1s;
+    }
+    .tts-btn:active:not(:disabled) { transform: scale(.97); }
+    .tts-btn:disabled { opacity: .4; cursor: default; }
+
+    .tts-btn.play  { background: #27ae60; color: #fff; }
+    .tts-btn.play:not(:disabled):hover  { background: #219a52; }
+    .tts-btn.pause { background: #e67e22; color: #fff; }
+    .tts-btn.pause:not(:disabled):hover { background: #cf6d17; }
+    .tts-btn.stop  { background: #c0392b; color: #fff; }
+    .tts-btn.stop:not(:disabled):hover  { background: #a93226; }
+
+    .tts-speed-row {
+      margin-bottom: 4px;
+    }
+
+    .tts-speed-btns {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .tts-speed-btn {
+      flex: 1;
+      padding: 12px 8px;
+      font-size: .95rem;
+      font-family: inherit;
+      border: 2px solid #c8d8e8;
+      border-radius: 10px;
+      background: #f0f5fa;
+      color: #4a6080;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s;
+      min-height: 44px;
+    }
+    .tts-speed-btn:hover {
+      background: #daeaf7;
+      border-color: #a0bdd8;
+    }
+    .tts-speed-btn.tts-speed-active {
+      background: #3498db;
+      border-color: #2980b9;
+      color: #fff;
+      font-weight: 600;
+    }
+    body.dark-theme .tts-speed-btn {
+      background: #2a3a4a;
+      border-color: #3a5060;
+      color: #a8c0d0;
+    }
+    body.dark-theme .tts-speed-btn:hover {
+      background: #354a5a;
+    }
+    body.dark-theme .tts-speed-btn.tts-speed-active {
+      background: #2980b9;
+      border-color: #3498db;
+      color: #fff;
+    }
+
+    .tts-note {
+      font-size: .75rem;
+      color: #999;
+      margin-top: 14px;
+      font-style: italic;
+    }
+    body.dark-theme .tts-note { color: #777; }
+
+    /* ── TTS loading stanje ── */
+    .tts-btn.loading {
+      opacity: .7;
+      cursor: default;
+    }
+
+    /* ── TTS word highlight ── */
+    .tts-word { display: inline; }
+    .tts-word.tts-active {
+      background: #ffe066;
+      border-radius: 3px;
+      color: #1a1a1a !important;
+      box-shadow: 0 0 0 2px #ffe066;
+      transition: background .1s;
+    }
+    body.dark-theme .tts-word.tts-active {
+      background: #f0c400;
+      box-shadow: 0 0 0 2px #f0c400;
+    }
+
+    /* ── Text area ── */
+    .reader-box {
+      background: var(--bg);
+      border: 2px solid #ddd;
+      border-radius: var(--radius);
+      padding: 32px 36px;
+      box-shadow: var(--shadow);
+      font-family: var(--font);
+      font-size: var(--fs);
+      line-height: var(--lh);
+      letter-spacing: var(--ls);
+      color: var(--text);
+      transition: background .3s, color .3s, font-family .2s, font-size .2s, line-height .2s, letter-spacing .2s;
+    }
+
+    .reader-box h2 {
+      font-size: 1.25em;
+      margin-bottom: .6em;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .reader-box p {
+      margin-bottom: 1em;
+    }
+
+    /* ── Markdown rendered elements ── */
+    .reader-box .md-h1 {
+      font-size: 1.55em;
+      font-weight: 700;
+      font-style: normal;
+      margin-top: .9em;
+      margin-bottom: .5em;
+      color: var(--accent);
+      line-height: 1.3;
+    }
+    .reader-box .md-h2 {
+      font-size: 1.3em;
+      font-weight: 700;
+      font-style: normal;
+      margin-top: .8em;
+      margin-bottom: .45em;
+      color: var(--accent);
+      line-height: 1.3;
+    }
+    .reader-box .md-h3 {
+      font-size: 1.12em;
+      font-weight: 700;
+      font-style: normal;
+      margin-top: .7em;
+      margin-bottom: .4em;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .reader-box .md-hr {
+      border: none;
+      border-top: 2px solid #ddd;
+      margin: 1em 0;
+    }
+    body.dark-theme .reader-box .md-hr { border-color: #555; }
+    .reader-box .md-ul,
+    .reader-box .md-ol {
+      margin-bottom: 1em;
+      padding-left: 1.6em;
+    }
+    .reader-box .md-ul li,
+    .reader-box .md-ol li {
+      margin-bottom: .35em;
+    }
+    .reader-box strong { font-weight: 700; font-style: normal; }
+
+    /* ── Dark theme overrides ── */
+    body.dark-theme {
+      --panel: #2a2a40;
+      --text: #e8e8f0;
+    }
+    body.dark-theme select { background: #2a2a40; color: #e8e8f0; border-color: #444; }
+    body.dark-theme .intensity-btn { background: #2a2a40; color: #e8e8f0; border-color: #555; }
+    body.dark-theme .intensity-btn.active { background: var(--accent); color: #fff; }
+    body.dark-theme .reader-box { border-color: #444; }
+    body.dark-theme header p { color: #aaa; }
+    body.dark-theme .paste-area { background: #2a2a40; color: #e8e8f0; border-color: #444; }
+    body.dark-theme .saved-item { background: #2a2a40; }
+    body.dark-theme .home-btn.secondary { background: #2a2a40; color: #e8e8f0; }
+    body.dark-theme .home-btn.disabled { background: #22223a; color: #666; }
+
+    /* ── Razumevanje screen ── */
+    .razumevanje-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .ai-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 32px 20px;
+      border-radius: var(--radius);
+      border: none;
+      font-family: inherit;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .15s, box-shadow .15s, opacity .2s;
+      box-shadow: var(--shadow);
+      text-align: center;
+      line-height: 1.3;
+      color: #fff;
+    }
+    .ai-btn:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0,0,0,.18);
+    }
+    .ai-btn:disabled { opacity: .5; cursor: default; transform: none; }
+    .ai-btn .btn-icon { font-size: 2.2rem; line-height: 1; }
+
+    .ai-btn.btn-simplify  { background: #5c6bc0; }
+    .ai-btn.btn-words     { background: #00897b; }
+    .ai-btn.btn-summary   { background: #e67e22; }
+    .ai-btn.btn-split     { background: #8e44ad; }
+    .ai-btn.btn-mindmap   { background: #c2185b; }
+
+    /* ── Miselni vzorec ── */
+    .mm-result-wrap { margin-top: 28px; display: none; }
+    .mm-result-wrap.visible { display: block; }
+    .mm-svg-wrap {
+      overflow-x: auto; overflow-y: hidden;
+      border-radius: var(--radius);
+      border: 2px solid var(--panel);
+      background: #fafafa;
+    }
+    body.dark-theme .mm-svg-wrap { background: #1e1e30; border-color: #333; }
+    .btn-print-mm {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #1a1a2e; color: #fff;
+      border: none; border-radius: 30px;
+      font-family: inherit; font-size: 1rem; font-weight: 700;
+      padding: 12px 26px; cursor: pointer; margin-top: 14px;
+      transition: background .2s;
+    }
+    .btn-print-mm:hover { background: #2d2d50; }
+
+    /* ── Loading spinner ── */
+    .ai-loading {
+      display: none;
+      align-items: center;
+      gap: 14px;
+      padding: 20px 24px;
+      background: var(--panel);
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .ai-loading.visible { display: flex; }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 4px solid #ccc;
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── AI result box ── */
+    .ai-result-wrap {
+      display: none;
+    }
+    .ai-result-wrap.visible { display: block; }
+
+    .ai-unverified-badge {
+      display: inline-block;
+      background: #fff3cd;
+      color: #856404;
+      border: 1.5px solid #ffc107;
+      border-radius: 20px;
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      margin-bottom: 12px;
+    }
+
+    .ai-result-box {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      box-shadow: var(--shadow);
+      font-size: 1.05rem;
+      line-height: 1.85;
+      color: var(--text);
+      margin-bottom: 16px;
+      white-space: pre-wrap;
+      border-left: 5px solid var(--accent);
+    }
+
+    .ai-result-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-tts-ai {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 26px;
+      background: #27ae60;
+      color: #fff;
+      border: none;
+      border-radius: 30px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-tts-ai:hover { background: #219a52; }
+    .btn-tts-ai.stop  { background: #c0392b; }
+    .btn-tts-ai.stop:hover { background: #a93226; }
+
+    .btn-use-in-reader {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 26px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 30px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-use-in-reader:hover { background: var(--accent-hover); }
+
+    .ai-error {
+      display: none;
+      background: #fdecea;
+      color: #c0392b;
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin-bottom: 16px;
+      font-size: .95rem;
+      font-weight: 600;
+      border-left: 5px solid #c0392b;
+    }
+    .ai-error.visible { display: block; }
+
+    /* ── Ponavljanje screen ── */
+    .ponavljanje-header {
+      font-size: .95rem;
+      color: #666;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+    body.dark-theme .ponavljanje-header { color: #aaa; }
+
+    .ponavljanje-main-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      width: 100%;
+      padding: 24px 32px;
+      background: #e67e22;
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, transform .15s, box-shadow .15s;
+      box-shadow: var(--shadow);
+      margin-bottom: 28px;
+    }
+    .ponavljanje-main-btn:hover:not(:disabled) {
+      background: #cf6d17;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,.16);
+    }
+    .ponavljanje-main-btn:disabled { opacity: .5; cursor: default; transform: none; }
+    .ponavljanje-main-btn .btn-icon { font-size: 1.8rem; }
+
+    .pon-section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 16px;
+      margin-top: 32px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--accent);
+    }
+
+    /* Flip cards */
+    .kartice-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .karta-wrap {
+      perspective: 800px;
+      cursor: pointer;
+    }
+
+    .karta-inner {
+      width: 100%;
+      display: grid;
+      transform-style: preserve-3d;
+      transition: transform .5s cubic-bezier(.4,0,.2,1);
+    }
+    .karta-wrap.flipped .karta-inner {
+      transform: rotateY(180deg);
+    }
+
+    .karta-front, .karta-back {
+      grid-area: 1 / 1;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 14px;
+      text-align: center;
+      font-weight: 600;
+      font-size: clamp(0.8rem, 2.5vw, 1rem);
+      line-height: 1.45;
+      min-height: 120px;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      hyphens: auto;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      box-shadow: var(--shadow);
+    }
+    .karta-front {
+      background: var(--accent);
+      color: #fff;
+    }
+    .karta-back {
+      background: var(--panel);
+      color: var(--text);
+      transform: rotateY(180deg);
+      border: 2px solid var(--accent);
+    }
+
+    .kartice-hint {
+      font-size: .82rem;
+      color: #999;
+      margin-bottom: 4px;
+      font-style: italic;
+    }
+
+    /* Quiz */
+    .kviz-vprasanje {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .kviz-vprasanje-text {
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    .kviz-moznosti {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .kviz-moznost {
+      padding: 12px 18px;
+      border: 2px solid #ccc;
+      border-radius: 30px;
+      background: #fff;
+      font-family: inherit;
+      font-size: .95rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color .2s, background .2s, color .2s;
+    }
+    body.dark-theme .kviz-moznost { background: #1a1a2e; color: #e8e8f0; border-color: #555; }
+    .kviz-moznost:hover:not(:disabled) { border-color: var(--accent); background: #eef3fb; }
+    body.dark-theme .kviz-moznost:hover:not(:disabled) { background: #2a2a40; }
+    .kviz-moznost.pravilna { border-color: #27ae60; background: #eafaf1; color: #1a5c34; }
+    body.dark-theme .kviz-moznost.pravilna { background: #0d3320; color: #6ddb99; }
+    .kviz-moznost.napacna  { border-color: #c0392b; background: #fdecea; color: #7b1a10; }
+    body.dark-theme .kviz-moznost.napacna  { background: #3a0f0a; color: #f1948a; }
+    .kviz-moznost:disabled { cursor: default; }
+
+    .kviz-feedback {
+      margin-top: 10px;
+      font-size: .9rem;
+      font-weight: 700;
+      display: none;
+    }
+    .kviz-feedback.show { display: block; }
+    .kviz-feedback.ok  { color: #27ae60; }
+    .kviz-feedback.err { color: #c0392b; }
+
+    .kviz-footer {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    /* Tezke besede */
+    .tezke-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .tezka-beseda {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .tezka-beseda-ime {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--accent);
+      min-width: 120px;
+      flex-shrink: 0;
+    }
+
+    .tezka-beseda-razlaga {
+      font-size: .95rem;
+      line-height: 1.55;
+      color: var(--text);
+    }
+
+    /* ── Moja šolska snov ── */
+    .snov-breadcrumb {
+      font-size: .88rem;
+      color: #888;
+      margin-bottom: 20px;
+      font-weight: 600;
+      letter-spacing: .02em;
+    }
+    .snov-breadcrumb span { color: var(--accent); }
+
+    .snov-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .snov-item {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color .2s, transform .15s;
+    }
+    .snov-item:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+    .snov-item-icon { font-size: 1.6rem; flex-shrink: 0; }
+
+    .snov-item-info { flex: 1; overflow: hidden; }
+    .snov-item-name {
+      font-weight: 700;
+      font-size: 1.05rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .snov-item-meta { font-size: .82rem; color: #888; margin-top: 2px; }
+
+    .snov-item-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .snov-btn-add {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 28px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 30px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+      margin-bottom: 8px;
+    }
+    .snov-btn-add:hover { background: var(--accent-hover); }
+
+    .snov-empty {
+      text-align: center;
+      color: #888;
+      font-size: 1rem;
+      margin: 30px 0;
+    }
+
+    .icon-btn.rename {
+      background: none;
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    .icon-btn.rename:hover { background: var(--accent); color: #fff; }
+
+    body.dark-theme .snov-item { background: #2a2a40; }
+    body.dark-theme #snovBesediloNaslov { background: #2a2a40; color: #e8e8f0; border-color: #444; }
+
+    /* ── Slikaj stran ── */
+    .slikaj-upload-row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .slikaj-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px 32px;
+      border-radius: 30px;
+      font-family: inherit;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+      border: none;
+    }
+    .slikaj-btn.camera { background: var(--accent); color: #fff; }
+    .slikaj-btn.camera:hover { background: var(--accent-hover); }
+    .slikaj-btn.file   { background: none; color: var(--accent); border: 2px solid var(--accent); }
+    .slikaj-btn.file:hover { background: var(--accent); color: #fff; }
+
+    .slikaj-warning {
+      background: #fff3cd;
+      border: 1.5px solid #ffc107;
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      font-size: .92rem;
+      color: #856404;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+    body.dark-theme .slikaj-warning { background: #3a2f00; color: #ffd54f; border-color: #f0a500; }
+
+    .snov-select-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: var(--panel);
+      border: 2px solid transparent;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+      transition: border-color .2s, transform .1s;
+      color: var(--text);
+    }
+    .snov-select-btn:hover { border-color: var(--accent); transform: translateY(-2px); }
+    body.dark-theme .snov-select-btn { background: #2a2a40; }
+    body.dark-theme #slikajSnovNaslovInput { background: #2a2a40; color: #e8e8f0; border-color: #444; }
+
+    /* ── Fokus način (bralno ravnilo) ── */
+    .fokus-poved {
+      cursor: pointer;
+      border-radius: 4px;
+      transition: opacity .25s;
+      display: inline;
+    }
+    .fokus-aktiven .fokus-poved {
+      opacity: 0.3;
+    }
+    .fokus-aktiven .fokus-poved.aktivna {
+      opacity: 1;
+      background: rgba(74, 126, 207, 0.13);
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+    body.dark-theme .fokus-aktiven .fokus-poved.aktivna {
+      background: rgba(74, 126, 207, 0.22);
+    }
+
+    .fokus-nav-bar {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg);
+      border-top: 2px solid var(--panel);
+      padding: 12px 20px;
+      z-index: 200;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 -4px 16px rgba(0,0,0,.10);
+    }
+    .fokus-nav-bar.aktiven { display: flex; }
+
+    .fokus-nav-btn {
+      padding: 14px 28px;
+      border-radius: 30px;
+      border: 2px solid var(--accent);
+      background: #fff;
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+      min-width: 110px;
+    }
+    .fokus-nav-btn:hover:not(:disabled) { background: var(--accent); color: #fff; }
+    .fokus-nav-btn:disabled { opacity: .35; cursor: default; }
+
+    .fokus-nav-counter {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 70px;
+      text-align: center;
+    }
+
+    body.dark-theme .fokus-nav-bar { border-top-color: #333; box-shadow: 0 -4px 20px rgba(0,0,0,.30); }
+    body.dark-theme .fokus-nav-btn { background: #2a2a40; }
+    body.dark-theme .fokus-nav-btn:hover:not(:disabled) { background: var(--accent); color: #fff; }
+
+    /* ── Zlogi (barvno menjavanje zlogov) ── */
+    /* Dve umirjeni, a jasno razločljivi barvi; znak | se nikoli ne prikaže. */
+    .reader-box .zlog-0 { color: #1b6ca8; }   /* modra */
+    .reader-box .zlog-1 { color: #b5532a; }   /* opečnata */
+    /* Na temni podlagi svetlejša odtenka za dober kontrast */
+    body.dark-theme .reader-box .zlog-0 { color: #6bb6ea; }
+    body.dark-theme .reader-box .zlog-1 { color: #eaa15f; }
+
+    /* ── Responsive ── */
+    @media (max-width: 560px) {
+      .reader-box { padding: 20px 18px; }
+      .controls-grid { grid-template-columns: 1fr; }
+      .home-grid { grid-template-columns: 1fr; }
+      .tts-btn { padding: 14px 20px; font-size: 1rem; }
+      .razumevanje-grid { grid-template-columns: 1fr; }
+      .ai-result-box { padding: 20px 18px; }
+      .kartice-grid { grid-template-columns: 1fr 1fr; }
+      .tezka-beseda { flex-direction: column; gap: 4px; }
+      .tezka-beseda-ime { min-width: unset; }
+      .snov-item-actions { flex-direction: column; gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-wrap">
+
+  <header>
+    <h1>Učni Most</h1>
+    <p>Bralnik – prilagodi besedilo po svojih željah</p>
+  </header>
+
+  <!-- ══════════════ DOMAČI ZASLON ══════════════ -->
+  <div class="screen active" id="screen-home">
+    <div class="home-grid">
+
+      <button class="home-btn primary" onclick="showScreen('screen-paste')">
+        <span class="btn-icon">📋</span>
+        Prilepi besedilo
+      </button>
+
+      <button class="home-btn secondary" onclick="showScreen('screen-saved')">
+        <span class="btn-icon">📚</span>
+        Moja besedila
+      </button>
+
+      <button class="home-btn secondary" onclick="showScreen('screen-reader')">
+        <span class="btn-icon">⚙️</span>
+        Nastavitve branja
+      </button>
+
+      <button class="home-btn secondary" onclick="showScreen('screen-razumevanje')">
+        <span class="btn-icon">🧠</span>
+        Razumevanje
+      </button>
+
+      <button class="home-btn secondary" onclick="showScreen('screen-ponavljanje')">
+        <span class="btn-icon">🔁</span>
+        Ponavljanje
+      </button>
+
+      <button class="home-btn secondary" onclick="showScreen('screen-snov-sola')">
+        <span class="btn-icon">🎒</span>
+        Moja šolska snov
+      </button>
+
+      <button class="home-btn secondary" onclick="showScreen('screen-slikaj')">
+        <span class="btn-icon">📷</span>
+        Slikaj stran
+      </button>
+
+      <button class="home-btn disabled" disabled>
+        <span class="btn-icon">📂</span>
+        Naloži datoteko
+        <span class="soon-badge">kmalu</span>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ══════════════ PRILEPI BESEDILO ══════════════ -->
+  <div class="screen" id="screen-paste">
+    <button class="back-btn" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+
+    <div class="panel">
+      <div class="panel-title">Prilepi besedilo</div>
+      <textarea class="paste-area" id="pasteArea" placeholder="Sem prilepi ali vtipkaj besedilo …"></textarea>
+      <div class="action-row">
+        <button class="btn-primary" onclick="confirmPaste()">Odpri v bralniku</button>
+        <button class="btn-secondary" onclick="savePastedText()">Shrani besedilo</button>
+        <button class="btn-secondary" onclick="(function(){var a=document.getElementById('pasteArea');a.value='';a.focus();})()">Briši</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MOJA BESEDILA ══════════════ -->
+  <div class="screen" id="screen-saved">
+    <button class="back-btn" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+
+    <div class="panel">
+      <div class="panel-title">Moja besedila</div>
+      <div id="savedListWrap"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ BRALNIK + NASTAVITVE ══════════════ -->
+  <div class="screen" id="screen-reader">
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:28px;">
+      <button class="back-btn" style="margin-bottom:0;" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+      <button class="back-btn" style="margin-bottom:0; background:var(--accent); color:#fff; border-color:var(--accent);" onclick="showScreen('screen-razumevanje')">🧠 Razumevanje</button>
+      <button class="back-btn" style="margin-bottom:0; background:#e67e22; color:#fff; border-color:#e67e22;" onclick="showScreen('screen-ponavljanje')">🔁 Ponavljanje</button>
+      <button class="back-btn" id="btnFokus" style="margin-bottom:0;" onclick="toggleFokus()">🔍 Fokus</button>
+      <button class="back-btn" id="btnZlogi" style="margin-bottom:0;" onclick="toggleZlogi()">🎨 Zlogi</button>
+    </div>
+
+    <!-- Font & sliders -->
+    <div class="panel">
+      <div class="panel-title">Nastavitve besedila</div>
+      <div class="controls-grid">
+
+        <div class="ctrl-group">
+          <label for="fontPicker">Pisava</label>
+          <select id="fontPicker">
+            <option value="'Lexend', sans-serif">Lexend</option>
+            <option value="'Atkinson Hyperlegible', sans-serif">Atkinson Hyperlegible</option>
+            <option value="'OpenDyslexic', sans-serif">OpenDyslexic</option>
+          </select>
+        </div>
+
+        <div class="ctrl-group">
+          <label for="fsSlider">Velikost črk</label>
+          <div class="slider-wrap">
+            <input type="range" id="fsSlider" min="14" max="38" step="1" value="20" />
+            <span class="slider-val" id="fsVal">20px</span>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <label for="lhSlider">Razmik med vrsticami</label>
+          <div class="slider-wrap">
+            <input type="range" id="lhSlider" min="1.2" max="3.0" step="0.1" value="1.8" />
+            <span class="slider-val" id="lhVal">1.8</span>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <label for="lsSlider">Razmik med črkami</label>
+          <div class="slider-wrap">
+            <input type="range" id="lsSlider" min="0" max="0.20" step="0.01" value="0.02" />
+            <span class="slider-val" id="lsVal">0.02em</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Background color -->
+    <div class="color-panel">
+      <div class="panel-title">Barva strani</div>
+
+      <div class="color-row" id="colorRow">
+        <button class="color-btn active" data-color="white"    title="Bela"          style="background:#ffffff; border-color:#ccc;"></button>
+        <button class="color-btn"        data-color="cream"    title="Kremna"         style="background:#fdf6e3;"></button>
+        <button class="color-btn"        data-color="lblue"    title="Svetlo modra"   style="background:#ddeeff;"></button>
+        <button class="color-btn"        data-color="yellow"   title="Nežno rumena"   style="background:#fffde7;"></button>
+        <button class="color-btn"        data-color="green"    title="Nežno zelena"   style="background:#e8f5e9;"></button>
+        <button class="color-btn"        data-color="pink"     title="Bledo roza"     style="background:#fce4ec;"></button>
+        <button class="color-btn"        data-color="gray"     title="Siva"           style="background:#eeeeee;"></button>
+        <button class="color-btn"        data-color="dark"     title="Temna"          style="background:#1a1a2e;"></button>
+      </div>
+
+      <div style="font-size:.9rem; font-weight:600; margin-bottom:10px; color:#666;">Jakost barve</div>
+      <div class="intensity-row" id="intensityRow">
+        <button class="intensity-btn"        data-intensity="gentle">Nežna</button>
+        <button class="intensity-btn active" data-intensity="medium">Srednja</button>
+        <button class="intensity-btn"        data-intensity="strong">Močnejša</button>
+      </div>
+    </div>
+
+    <!-- ══ Branje na glas ══ -->
+    <div class="tts-panel">
+      <div class="panel-title">Branje na glas</div>
+
+      <div class="tts-buttons">
+        <button class="tts-btn play"  id="btnPlay"  onclick="playTTS()">▶ Predvajaj</button>
+        <button class="tts-btn pause" id="btnPause" onclick="pauseTTS()" disabled>⏸ Premor</button>
+        <button class="tts-btn stop"  id="btnStop"  onclick="stopTTS()"  disabled>⏹ Ustavi</button>
+      </div>
+
+      <div class="tts-speed-row ctrl-group">
+        <label>Hitrost branja</label>
+        <div class="tts-speed-btns">
+          <button class="tts-speed-btn" id="ttsSpeedSlow"   onclick="setTTSSpeed(0.8)">Počasi</button>
+          <button class="tts-speed-btn tts-speed-active" id="ttsSpeedNormal" onclick="setTTSSpeed(1.0)">Normalno</button>
+          <button class="tts-speed-btn" id="ttsSpeedFast"   onclick="setTTSSpeed(1.2)">Hitro</button>
+        </div>
+      </div>
+
+      <p class="tts-note">Naravni slovenski glas prek ElevenLabs. Ob napaki se samodejno preklopi na glas brskalnika.</p>
+    </div>
+
+    <!-- Reader box -->
+    <div class="reader-box" id="readerBox"></div>
+
+  </div><!-- /screen-reader -->
+
+  <!-- ══════════════ RAZUMEVANJE ══════════════ -->
+  <div class="screen" id="screen-razumevanje">
+    <button class="back-btn" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+
+    <div class="panel">
+      <div class="panel-title">Razumevanje besedila</div>
+      <p style="font-size:.95rem; color:#666; margin-bottom:20px; line-height:1.6;">
+        Izberi, kaj želiš narediti z besedilom iz bralnika. Odgovor ustvari umetna inteligenca.
+      </p>
+
+      <div class="razumevanje-grid">
+        <button class="ai-btn btn-simplify" onclick="callAI('simplify')">
+          <span class="btn-icon">✏️</span>
+          Povej bolj enostavno
+        </button>
+        <button class="ai-btn btn-words" onclick="callAI('words')">
+          <span class="btn-icon">📖</span>
+          Razloži težke besede
+        </button>
+        <button class="ai-btn btn-summary" onclick="callAI('summary')">
+          <span class="btn-icon">📝</span>
+          Naredi kratek povzetek
+        </button>
+        <button class="ai-btn btn-split" onclick="callAI('split')">
+          <span class="btn-icon">🧩</span>
+          Razdeli na manjše dele
+        </button>
+        <button class="ai-btn btn-mindmap" onclick="callMiselniVzorec()">
+          <span class="btn-icon">🗺️</span>
+          Miselni vzorec
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div class="ai-loading" id="aiLoading">
+        <div class="spinner"></div>
+        <span>Umetna inteligenca razmišlja … počakaj trenutek.</span>
+      </div>
+
+      <!-- Error -->
+      <div class="ai-error" id="aiError"></div>
+
+      <!-- Result -->
+      <div class="ai-result-wrap" id="aiResultWrap">
+        <span class="ai-unverified-badge">⚠️ nepreverjeno – odgovor je ustvarila umetna inteligenca</span>
+        <div class="ai-result-box" id="aiResultBox"></div>
+        <div class="ai-result-actions">
+          <button class="btn-tts-ai" id="btnAiTts" onclick="toggleAiTTS()">🔊 Preberi na glas</button>
+          <button class="btn-use-in-reader" onclick="useAiResultInReader()">📖 Odpri v bralniku</button>
+        </div>
+      </div>
+
+      <!-- Miselni vzorec result -->
+      <div class="mm-result-wrap" id="mmResultWrap">
+        <span class="ai-unverified-badge">⚠️ nepreverjeno – odgovor je ustvarila umetna inteligenca</span>
+        <div class="mm-svg-wrap" id="mmSvgWrap"></div>
+        <button class="btn-print-mm" onclick="printMiselniVzorec()">🖨️ Natisni</button>
+      </div>
+    </div>
+  </div><!-- /screen-razumevanje -->
+
+  <!-- ══════════════ PONAVLJANJE ══════════════ -->
+  <div class="screen" id="screen-ponavljanje">
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:28px;">
+      <button class="back-btn" style="margin-bottom:0;" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+      <button class="back-btn" style="margin-bottom:0;" onclick="showScreen('screen-reader')">📖 Bralnik</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Ponavljanje</div>
+      <p class="ponavljanje-header">
+        Klikni spodnji gumb in umetna inteligenca bo ustvarila gradivo za ponavljanje iz besedila v bralniku.
+      </p>
+
+      <button class="ponavljanje-main-btn" id="btnPripravi" onclick="callPonavljanje()">
+        <span class="btn-icon">🔁</span>
+        Pripravi ponavljanje
+      </button>
+
+      <!-- Loading -->
+      <div class="ai-loading" id="ponLoading">
+        <div class="spinner"></div>
+        <span>Pripravljam gradivo za ponavljanje … počakaj trenutek.</span>
+      </div>
+
+      <!-- Error -->
+      <div class="ai-error" id="ponError"></div>
+
+      <!-- Result -->
+      <div id="ponResultWrap" style="display:none;">
+        <span class="ai-unverified-badge">⚠️ nepreverjeno – gradivo je ustvarila umetna inteligenca</span>
+
+        <!-- 1. Kartice -->
+        <div class="pon-section-title">🃏 Kartice</div>
+        <p class="kartice-hint">Klikni kartico, da jo obrneš.</p>
+        <div class="kartice-grid" id="karticGrid"></div>
+
+        <!-- 2. Kviz -->
+        <div class="pon-section-title">❓ Kviz</div>
+        <div id="kvizWrap"></div>
+        <div class="kviz-footer">
+          <button class="btn-secondary" id="btnPonoviNapacne" onclick="ponoviNapacne()" style="display:none;">🔄 Ponovi napačne</button>
+        </div>
+
+        <!-- 3. Težke besede -->
+        <div class="pon-section-title">📚 Težke besede</div>
+        <div class="tezke-list" id="tezkeWrap"></div>
+      </div>
+    </div>
+  </div><!-- /screen-ponavljanje -->
+
+  <!-- ══════════════ MOJA ŠOLSKA SNOV – IZBIRA ŠOLE ══════════════ -->
+  <div class="screen" id="screen-snov-sola">
+    <button class="back-btn" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+    <div class="panel">
+      <div class="panel-title">🎒 Moja šolska snov</div>
+      <p style="font-size:.95rem; color:#888; margin-bottom:28px; line-height:1.6;">Izberi vrsto šole, nato razred in predmet, da organiziraš svoja besedila.</p>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:18px; max-width:520px;">
+        <button class="home-btn primary" onclick="snovIzberiSolo('osnovna')">
+          <span class="btn-icon">🏫</span>
+          Osnovna šola
+        </button>
+        <button class="home-btn secondary" onclick="snovIzberiSolo('srednja')">
+          <span class="btn-icon">🎓</span>
+          Srednja šola
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MOJA ŠOLSKA SNOV – RAZREDI/LETNIKI ══════════════ -->
+  <div class="screen" id="screen-snov-razredi">
+    <button class="back-btn" onclick="showScreen('screen-snov-sola')">← Nazaj na izbiro šole</button>
+    <div class="panel">
+      <div class="panel-title" id="snovRazretiTitle">Razredi</div>
+      <div id="snovRazrediList" class="snov-list"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MOJA ŠOLSKA SNOV – PREDMETI ══════════════ -->
+  <div class="screen" id="screen-snov-predmeti">
+    <button class="back-btn" onclick="showScreen('screen-snov-razredi')">← Nazaj na razrede</button>
+    <div class="panel">
+      <div class="panel-title" id="snovPredmetiTitle">Predmeti</div>
+      <div class="snov-breadcrumb" id="snovPredmetiBreadcrumb"></div>
+      <button class="snov-btn-add" onclick="snovDodajPredmet()">+ Dodaj predmet</button>
+      <div id="snovPredmetiList" class="snov-list"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MOJA ŠOLSKA SNOV – TEME ══════════════ -->
+  <div class="screen" id="screen-snov-teme">
+    <button class="back-btn" onclick="showScreen('screen-snov-predmeti')">← Nazaj na predmete</button>
+    <div class="panel">
+      <div class="panel-title" id="snovTemePanelTitle">Teme</div>
+      <div class="snov-breadcrumb" id="snovTemeBreadcrumb"></div>
+      <button class="snov-btn-add" onclick="snovDodajTemo()">+ Dodaj temo</button>
+      <div id="snovTemeList" class="snov-list"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MOJA ŠOLSKA SNOV – BESEDILA ══════════════ -->
+  <div class="screen" id="screen-snov-besedila">
+    <button class="back-btn" onclick="showScreen('screen-snov-teme')">← Nazaj na teme</button>
+    <div class="panel">
+      <div class="panel-title" id="snovBesedilaPanelTitle">Besedila</div>
+      <div class="snov-breadcrumb" id="snovBesedilaBreadcrumb"></div>
+      <button class="snov-btn-add" onclick="snovToggleVnosBesedila(true)">+ Dodaj besedilo</button>
+
+      <!-- Vnos novega besedila -->
+      <div id="snovVnosWrap" style="display:none; margin-bottom:20px;">
+        <div class="panel" style="margin-bottom:0; box-shadow:none; border:2px solid var(--accent);">
+          <div class="panel-title">Novo besedilo</div>
+          <input type="text" id="snovBesediloNaslov" placeholder="Naslov besedila (npr. Poglavje 1)" style="width:100%; padding:12px 14px; font-size:1rem; font-family:inherit; border:2px solid #ccc; border-radius:10px; margin-bottom:12px; background:#fff; color:var(--text);" />
+          <textarea id="snovBesediloVsebina" class="paste-area" style="margin-bottom:12px;" placeholder="Sem prilepi ali vtipkaj besedilo …"></textarea>
+          <div class="action-row">
+            <button class="btn-primary" onclick="snovShraniBesedilo()">Shrani</button>
+            <button class="btn-secondary" onclick="snovToggleVnosBesedila(false)">Prekliči</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="snovBesedilaList" class="snov-list"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SLIKAJ STRAN ══════════════ -->
+  <div class="screen" id="screen-slikaj">
+    <button class="back-btn" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+
+    <div class="panel">
+      <div class="panel-title">📷 Slikaj stran ali naloži sliko</div>
+      <p style="font-size:.95rem;color:#666;margin-bottom:20px;line-height:1.6;">
+        Fotografiraj stran učbenika ali naloži sliko – umetna inteligenca bo prebrala besedilo.
+      </p>
+
+      <!-- Skriti vhodi za datoteke -->
+      <input type="file" id="slikajInputCamera" accept="image/*" capture="environment" style="display:none;" onchange="handleSlikajFile(event)" />
+      <input type="file" id="slikajInputFile"   accept="image/*" style="display:none;"                        onchange="handleSlikajFile(event)" />
+
+      <div class="slikaj-upload-row">
+        <button class="slikaj-btn camera" onclick="document.getElementById('slikajInputCamera').click()">
+          📷 Fotografiraj stran
+        </button>
+        <button class="slikaj-btn file" onclick="document.getElementById('slikajInputFile').click()">
+          🖼️ Naloži sliko
+        </button>
+      </div>
+
+      <!-- Nalaganje -->
+      <div class="ai-loading" id="slikajLoading">
+        <div class="spinner"></div>
+        <span>Berem besedilo s slike … to lahko traja trenutek.</span>
+      </div>
+
+      <!-- Napaka -->
+      <div class="ai-error" id="slikajError"></div>
+
+      <!-- Rezultat -->
+      <div id="slikajResultWrap" style="display:none;">
+        <div class="slikaj-warning">
+          ⚠️ Besedilo, prebrano s slike, je lahko mestoma nepopolno. Preden ga uporabiš, ga preberi in po potrebi popravi.
+        </div>
+        <div class="panel-title">Prebrano besedilo (po potrebi popravi):</div>
+        <textarea class="paste-area" id="slikajBesedilo" style="min-height:280px;"></textarea>
+        <div class="action-row" style="margin-top:16px;">
+          <button class="btn-primary" onclick="slikajOdpriVBralniku()">📖 Odpri v bralniku</button>
+          <button class="btn-secondary" onclick="slikajPokaziSnovDialog()">🎒 Shrani v šolsko snov</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dialog: shrani v šolsko snov -->
+    <div id="slikajSnovDialog" style="display:none;">
+      <div class="panel" style="border:2px solid var(--accent); margin-top:8px;">
+        <div class="panel-title">🎒 Shrani v šolsko snov</div>
+
+        <!-- Korak 1: Šola -->
+        <div id="ssStep1">
+          <p style="margin-bottom:16px;font-size:.95rem;color:#666;">Izberi vrsto šole:</p>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;">
+            <button class="btn-primary"   onclick="ssIzberiSolo('osnovna')">🏫 Osnovna šola</button>
+            <button class="btn-secondary" onclick="ssIzberiSolo('srednja')">🎓 Srednja šola</button>
+          </div>
+        </div>
+
+        <!-- Korak 2: Razred -->
+        <div id="ssStep2" style="display:none;">
+          <div class="snov-breadcrumb" id="ssBreadcrumb2"></div>
+          <p style="margin-bottom:12px;font-size:.95rem;color:#666;">Izberi razred / letnik:</p>
+          <div id="ssRazredList" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+
+        <!-- Korak 3: Predmet -->
+        <div id="ssStep3" style="display:none;">
+          <div class="snov-breadcrumb" id="ssBreadcrumb3"></div>
+          <p style="margin-bottom:12px;font-size:.95rem;color:#666;">Izberi predmet:</p>
+          <div id="ssPredmetList" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+
+        <!-- Korak 4: Tema -->
+        <div id="ssStep4" style="display:none;">
+          <div class="snov-breadcrumb" id="ssBreadcrumb4"></div>
+          <p style="margin-bottom:12px;font-size:.95rem;color:#666;">Izberi temo:</p>
+          <div id="ssTemaList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+          <button class="btn-secondary" onclick="ssNovaTema()">+ Ustvari novo temo</button>
+        </div>
+
+        <!-- Korak 5: Naslov in shrani -->
+        <div id="ssStep5" style="display:none;">
+          <div class="snov-breadcrumb" id="ssBreadcrumb5"></div>
+          <p style="margin-bottom:12px;font-size:.95rem;color:#666;">Vnesite naslov besedila:</p>
+          <input type="text" id="ssNaslovInput" placeholder="Npr. Poglavje 3, Rimljani …"
+            style="width:100%;padding:12px 14px;font-size:1rem;font-family:inherit;border:2px solid #ccc;border-radius:10px;margin-bottom:16px;background:#fff;color:var(--text);" />
+          <div class="action-row">
+            <button class="btn-primary" onclick="ssShrani()">💾 Shrani</button>
+            <button class="btn-secondary" onclick="ssZapri()">Prekliči</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /screen-slikaj -->
+
+</div><!-- /app-wrap -->
+
+<!-- Fokus način – navigacijska vrstica -->
+<div class="fokus-nav-bar" id="fokusNavBar">
+  <button class="fokus-nav-btn" id="fokusNavNazaj" onclick="fokusNazaj()">← Nazaj</button>
+  <span class="fokus-nav-counter" id="fokusNavStev"></span>
+  <button class="fokus-nav-btn" id="fokusNavNaprej" onclick="fokusNaprej()">Naprej →</button>
+</div>
+
+<script>
+  // ── Navigation ──
+  function showScreen(id) {
+    if (id !== 'screen-reader') { stopTTS(); _fokusReset(); }
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if (id === 'screen-saved') renderSavedList();
+    if (id === 'screen-snov-razredi') renderSnovRazredi();
+    if (id === 'screen-snov-predmeti') renderSnovPredmeti();
+    if (id === 'screen-snov-teme') renderSnovTeme();
+    if (id === 'screen-snov-besedila') renderSnovBesedila();
   }
 
-  try {
-    const { besedilo, navodilo, slika, mediaType, naloga } = await req.json();
+  // ── Fokus način – stanje ──
+  let fokusAktiven = false;
+  let fokusIndeks  = 0;
+  let fokusPovedi  = [];
+  let _readerPlainText = '';
 
-    const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: 'ANTHROPIC_API_KEY ni nastavljen' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+  // ── Color definitions ──
+  const PALETTES = {
+    white:  { gentle: '#ffffff', medium: '#ffffff', strong: '#ffffff' },
+    cream:  { gentle: '#fefcf5', medium: '#fdf6e3', strong: '#f9eecc' },
+    lblue:  { gentle: '#f0f7ff', medium: '#ddeeff', strong: '#c0dfff' },
+    yellow: { gentle: '#fffef5', medium: '#fffde7', strong: '#fff9c4' },
+    green:  { gentle: '#f4fbf4', medium: '#e8f5e9', strong: '#c8e6c9' },
+    pink:   { gentle: '#fff5f8', medium: '#fce4ec', strong: '#f8bbd0' },
+    gray:   { gentle: '#f7f7f7', medium: '#eeeeee', strong: '#e0e0e0' },
+    dark:   { gentle: '#1a1a2e', medium: '#1a1a2e', strong: '#12121f' },
+  };
+
+  const TEXT_COLORS = {
+    white: '#1a1a2e', cream: '#2d2a1e', lblue: '#0d2a4a',
+    yellow: '#2a2800', green: '#0d2e0d', pink: '#3a0a1e',
+    gray: '#1a1a1a', dark: '#e8e8f0',
+  };
+
+  let state = { color: 'white', intensity: 'medium' };
+
+  // ── Font ──
+  document.getElementById('fontPicker').addEventListener('change', function () {
+    document.documentElement.style.setProperty('--font', this.value);
+    document.getElementById('readerBox').style.fontFamily = this.value;
+  });
+
+  // ── Sliders ──
+  document.getElementById('fsSlider').addEventListener('input', function () {
+    document.getElementById('fsVal').textContent = this.value + 'px';
+    document.getElementById('readerBox').style.fontSize = this.value + 'px';
+  });
+  document.getElementById('lhSlider').addEventListener('input', function () {
+    const v = parseFloat(this.value).toFixed(1);
+    document.getElementById('lhVal').textContent = v;
+    document.getElementById('readerBox').style.lineHeight = v;
+  });
+  document.getElementById('lsSlider').addEventListener('input', function () {
+    const v = parseFloat(this.value).toFixed(2);
+    document.getElementById('lsVal').textContent = v + 'em';
+    document.getElementById('readerBox').style.letterSpacing = v + 'em';
+  });
+
+  // ── Color buttons ──
+  function applyColor() {
+    const bg = PALETTES[state.color][state.intensity];
+    const fg = TEXT_COLORS[state.color];
+    document.body.style.background = bg;
+    const box = document.getElementById('readerBox');
+    box.style.background = bg;
+    box.style.color = fg;
+    box.style.borderColor = state.color === 'dark' ? '#444' : '#ddd';
+    document.body.classList.toggle('dark-theme', state.color === 'dark');
+  }
+
+  document.getElementById('colorRow').querySelectorAll('.color-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      state.color = this.dataset.color;
+      applyColor();
+    });
+  });
+
+  document.getElementById('intensityRow').querySelectorAll('.intensity-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.intensity-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      state.intensity = this.dataset.intensity;
+      applyColor();
+    });
+  });
+
+  // ── Paste & reader ──
+  function confirmPaste() {
+    const txt = document.getElementById('pasteArea').value.trim();
+    if (!txt) return;
+    setReaderText(txt);
+    showScreen('screen-reader');
+  }
+
+  // ── Markdown helpers ──
+
+  // Med renderiranjem: če je true, se navadno besedilo izriše z barvnimi zlogi.
+  let _zlogiRender = false;
+
+  // Doda besedilo v element: bodisi kot navaden tekst bodisi z barvnimi zlogi (po znaku |).
+  function _appendInlineText(el, text) {
+    if (_zlogiRender) _appendZlogiText(el, text);
+    else el.appendChild(document.createTextNode(text));
+  }
+
+  function _applyInlineMarkdown(el, text) {
+    // Bold: **text** → <strong>; italic markers (*text* / _text_) → plain text
+    const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_)/g);
+    parts.forEach(part => {
+      if (/^\*\*(.+)\*\*$/.test(part)) {
+        const s = document.createElement('strong');
+        _appendInlineText(s, part.slice(2, -2));
+        el.appendChild(s);
+      } else if (/^\*(.+)\*$/.test(part) || /^_(.+)_$/.test(part)) {
+        _appendInlineText(el, part.slice(1, -1));
+      } else {
+        _appendInlineText(el, part);
+      }
+    });
+  }
+
+  function _isListBlock(lines) {
+    return lines.every(l => /^[-*] /.test(l) || /^\d+\. /.test(l));
+  }
+
+  // Heading match helper (most hashes first to avoid prefix collision)
+  function _matchHeading(line) {
+    let m;
+    if ((m = line.match(/^### (.+)/))) return { cls: 'md-h3', txt: m[1] };
+    if ((m = line.match(/^## ([^#].+)/))) return { cls: 'md-h2', txt: m[1] };
+    if ((m = line.match(/^# ([^#].+)/))) return { cls: 'md-h1', txt: m[1] };
+    return null;
+  }
+
+  function _renderMarkdownBlock(raw, box) {
+    const lines = raw.split(/\n/).map(l => l.trim()).filter(Boolean);
+    if (!lines.length) return;
+
+    // Horizontal rule
+    if (lines.length === 1 && /^---+$/.test(lines[0])) {
+      const hr = document.createElement('hr');
+      hr.className = 'md-hr';
+      box.appendChild(hr);
+      return;
     }
 
-    let messageContent;
+    // Headings (single-line block starting with #)
+    if (lines.length === 1) {
+      const hm = _matchHeading(lines[0]);
+      if (hm) { const h = document.createElement('p'); h.className = hm.cls; _applyInlineMarkdown(h, hm.txt); box.appendChild(h); return; }
+    }
 
-    // Privzeti sistemski poziv za besedilne naloge (povzetek, poenostavitev ...)
-    const privzetiSystem = 'Vedno odgovarjaj izključno v slovenščini in uporabljaj samo slovensko latinico (vključno s č, š, ž). Nikoli ne uporabljaj cirilice ali besed iz drugih jezikov (npr. srbščine, hrvaščine); lastna imena in izraze zapiši v latinici. Besedilo piši v navadni, čisti obliki brez oblikovanja markdown — brez lojtr (#, ##), brez zvezdic (* in **), brez krepkega ali ležečega besedila in brez naštevanj z znaki (-, •). Piši v polnih, preprostih povedih. Kadar je za nalogo izrecno zahtevan JSON, vrni veljaven JSON, pri čemer naj bo besedilo znotraj vrednosti prav tako v čisti slovenščini brez markdown oznak.';
+    // Multi-line: check if first line is a heading
+    const hm0 = _matchHeading(lines[0]);
+    if (hm0) {
+      const h = document.createElement('p'); h.className = hm0.cls; _applyInlineMarkdown(h, hm0.txt); box.appendChild(h);
+      const rest = lines.slice(1).join('\n');
+      if (rest.trim()) _renderMarkdownBlock(rest, box);
+      return;
+    }
 
-    let systemPrompt = privzetiSystem;
-    let maxTokens = 1500;
+    // Unordered list
+    if (lines.every(l => /^[-*] /.test(l))) {
+      const ul = document.createElement('ul'); ul.className = 'md-ul';
+      lines.forEach(l => { const li = document.createElement('li'); _applyInlineMarkdown(li, l.slice(2)); ul.appendChild(li); });
+      box.appendChild(ul); return;
+    }
+    // Ordered list
+    if (lines.every(l => /^\d+\. /.test(l))) {
+      const ol = document.createElement('ol'); ol.className = 'md-ol';
+      lines.forEach(l => { const li = document.createElement('li'); _applyInlineMarkdown(li, l.replace(/^\d+\. /, '')); ol.appendChild(li); });
+      box.appendChild(ol); return;
+    }
 
-    if (slika) {
-      // Način OCR: preberi besedilo iz slike
-      maxTokens = 4000;
-      messageContent = [
-        {
-          type: 'image',
-          source: {
-            type: 'base64',
-            media_type: mediaType || 'image/jpeg',
-            data: slika,
-          },
-        },
-        {
-          type: 'text',
-          text: 'Natančno prepiši vse besedilo s te slike v slovenščini. Ohrani naravni vrstni red branja (od leve proti desni, od zgoraj navzdol). Pravilno upoštevaj šumnike (č, š, ž). Vrni samo golo prepisano besedilo brez kakršnih koli komentarjev, razlag ali uvoda.',
-        },
-      ];
-    } else if (naloga === 'zlogi') {
-      // Način zlogovanje: vrni isto besedilo z označenimi mejami med zlogi (znak |)
-      // POMEMBNO: ta veja je popolnoma ločena od miselnega vzorca; tukaj se NIKOLI
-      // ne generira JSON, SVG, miselni vzorec ali kakršna koli druga oblika izhoda.
-      maxTokens = 8000;
-      systemPrompt = 'Si natančno orodje za zlogovanje slovenskega besedila. Tvoja edina naloga je: v dano besedilo znotraj besed vstaviš znak | (navpična črta) kot ločilo med zlogi po pravilih slovenskega zlogovanja, čim bolj pravilno. Stroga pravila: 1) Ne spreminjaj NIČESAR drugega — ohrani točno iste črke, velike in male črke, vsa ločila, presledke, prelome vrstic in vrstni red besed. 2) Ne popravljaj tipkarskih napak, ne dodajaj in ne odvzemaj besed. 3) Znak | vstavljaj SAMO med zloge znotraj besed; ne deli števk, ločil ali samostojnih črk. 4) Enozložne besede pusti brez |. 5) NIKOLI ne sestavljaj miselnega vzorca, povzetka, razlage, prevoda ali kakršne koli druge naloge. NIKOLI ne vračaj JSON, SVG, markdown, naštevanj, oklepajev ali ograj s tremi nagibnimi črtami. 6) Vrni izključno označeno besedilo kot navaden tekst — brez uvoda, brez zaključka, brez narekovajev okoli rezultata. Primeri: "celica" -> "ce|li|ca", "rastlinske" -> "rast|lin|ske", "in" -> "in" (enozložno, brez |).';
-      messageContent = `Razdeli naslednje besedilo na zloge po zgornjih pravilih in vrni samo označeno besedilo (brez uvodnih ali zaključnih stavkov, brez markdown, brez JSON, brez miselnega vzorca):\n\n${besedilo}`;
+    // Default: paragraph
+    const p = document.createElement('p');
+    _applyInlineMarkdown(p, lines.join(' '));
+    box.appendChild(p);
+  }
+
+  function _renderMarkdownToBox(txt, box) {
+    box.innerHTML = '';
+    const blocks = txt.split(/\n\n+/).map(b => b.trim()).filter(Boolean);
+    blocks.forEach(block => _renderMarkdownBlock(block, box));
+  }
+
+  // Strip markdown markers for TTS (no #, **, *, _, ---)
+  function _stripMarkdown(txt) {
+    return txt
+      .replace(/^#{1,3} /gm, '')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/_([^_]+)_/g, '$1')
+      .replace(/^[-*] /gm, '')
+      .replace(/^\d+\. /gm, '')
+      .replace(/^---+$/gm, '');
+  }
+
+  function setReaderText(txt) {
+    stopTTS();
+    _fokusReset();
+    _readerPlainText = txt;
+    // Novo besedilo → ponastavi zloge (predpomnilnik velja samo za trenutno besedilo)
+    _zlogiAktiven = false;
+    _zlogiAnnotated = null;
+    _zlogiLoading = false;
+    _updateZlogiBtn();
+    const box = document.getElementById('readerBox');
+    _renderMarkdownToBox(txt, box);
+    applyColor();
+    wrapWordsForTTS();
+  }
+
+  // ══════════════════════════════════════════════
+  // ── Zlogi (barvno menjavanje zlogov) ──
+  // ══════════════════════════════════════════════
+
+  let _zlogiAktiven   = false;  // ali je prikaz zlogov vklopljen
+  let _zlogiAnnotated = null;   // z | označena različica _readerPlainText (predpomnilnik)
+  let _zlogiLoading   = false;  // ali poteka klic na zaledje
+
+  // Izriše besedilo z barvnim menjavanjem zlogov. Znak | je ločilo med zlogi
+  // in se NIKOLI ne prikaže. Menjavanje barv se za vsako besedo začne znova.
+  function _appendZlogiText(parent, text) {
+    // Beseda = zaporedje črk z morebitnimi | med njimi. Vse drugo (presledki,
+    // ločila, števke) ostane navadno besedilo v običajni barvi. Znak | je
+    // SAMO ločilo med zlogi in se uporabniku NIKOLI ne prikaže.
+    const re = /[\p{L}]+(?:\|[\p{L}]+)*/gu;
+    let last = 0;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) {
+        // Med besedami pustimo navadno besedilo, brez morebitnih stray | znakov.
+        const between = text.slice(last, m.index).replace(/\|/g, '');
+        if (between) parent.appendChild(document.createTextNode(between));
+      }
+      const syls = m[0].split('|').filter(Boolean);
+      syls.forEach((s, i) => {
+        const span = document.createElement('span');
+        span.className = 'zlog zlog-' + (i % 2);
+        span.textContent = s;
+        parent.appendChild(span);
+      });
+      last = re.lastIndex;
+    }
+    if (last < text.length) {
+      const tail = text.slice(last).replace(/\|/g, '');
+      if (tail) parent.appendChild(document.createTextNode(tail));
+    }
+  }
+
+  // Čisto besedilo za branje na glas (brez markdown oznak in brez znakov |).
+  function _ttsCleanText() {
+    return _stripMarkdown(_readerPlainText).replace(/\s+/g, ' ').trim();
+  }
+
+  // Osrednji izris bralnika – upošteva fokus in zloge hkrati.
+  function renderReader() {
+    const box = document.getElementById('readerBox');
+    if (fokusAktiven) {
+      _renderFokusBox();                 // fokus sam upošteva zloge
+      ttsUtteranceText = _ttsCleanText();
+    } else if (_zlogiAktiven && _zlogiAnnotated) {
+      _zlogiRender = true;
+      _renderMarkdownToBox(_zlogiAnnotated, box);
+      _zlogiRender = false;
+      applyColor();
+      ttsUtteranceText = _ttsCleanText();  // glas vedno bere čisto besedilo
     } else {
-      // Obstoječi način: besedilna zahteva
-      messageContent = `${navodilo}\n\n${besedilo}`;
+      _renderMarkdownToBox(_readerPlainText, box);
+      applyColor();
+      wrapWordsForTTS();
     }
+  }
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+  function _updateZlogiBtn() {
+    const btn = document.getElementById('btnZlogi');
+    if (!btn) return;
+    if (_zlogiLoading) {
+      btn.disabled = true;
+      btn.textContent = '🎨 nalagam …';
+      btn.style.cssText = 'margin-bottom:0; opacity:.7; cursor:default;';
+    } else if (_zlogiAktiven) {
+      btn.disabled = false;
+      btn.textContent = '🎨 Zlogi: VKL';
+      btn.style.cssText = 'margin-bottom:0; background:var(--accent); color:#fff; border-color:var(--accent);';
+    } else {
+      btn.disabled = false;
+      btn.textContent = '🎨 Zlogi';
+      btn.style.cssText = 'margin-bottom:0;';
+    }
+  }
+
+  async function _fetchZlogi(besedilo) {
+    // Klic je popolnoma ločen od miselnega vzorca: pošljemo izrecno naloga="zlogi".
+    const resp = await fetch(SUPABASE_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
       },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: maxTokens,
-        system: systemPrompt,
-        ...(naloga === 'zlogi' ? { temperature: 0 } : {}),
-        messages: [
-          {
-            role: 'user',
-            content: messageContent,
-          },
-        ],
-      }),
+      body: JSON.stringify({ besedilo, naloga: 'zlogi' }),
+    });
+    if (!resp.ok) {
+      const txt = await resp.text().catch(() => '');
+      throw new Error('Strežnik je vrnil napako ' + resp.status + (txt ? ': ' + txt : ''));
+    }
+    const data = await resp.json();
+    let raw = data.rezultat || data.result || data.odgovor || '';
+    if (!raw) {
+      const content = data.text || data.content || '';
+      if (Array.isArray(content)) {
+        raw = content.filter(b => b.type === 'text').map(b => b.text).join('\n');
+      } else {
+        raw = content;
+      }
+    }
+    if (!raw) throw new Error('Strežnik ni vrnil besedila.');
+    // Varnostno odstrani morebitne ograje ```...```
+    raw = raw.replace(/^```[a-z]*\s*\n?/i, '').replace(/\n?```\s*$/i, '');
+    // Če bi model po pomoti dodal uvodno razlago kot npr. "Razdeljeno besedilo:"
+    // pred prvim stavkom, jo odstranimo (samo če prva vrstica ne vsebuje | in se
+    // konča s ":" — torej je očitno uvod, ne pa del besedila).
+    const lines = raw.split(/\n/);
+    if (lines.length > 1 && !lines[0].includes('|') && /:\s*$/.test(lines[0]) && lines[0].length < 80) {
+      raw = lines.slice(1).join('\n').replace(/^\s*\n/, '');
+    }
+    return raw.trim();
+  }
+
+  async function toggleZlogi() {
+    if (!_readerPlainText) { alert('V bralniku ni besedila.'); return; }
+    if (_zlogiLoading) return;
+
+    // Izklop
+    if (_zlogiAktiven) {
+      _zlogiAktiven = false;
+      _updateZlogiBtn();
+      renderReader();
+      return;
+    }
+
+    // Vklop – uporabi predpomnilnik, če obstaja
+    if (_zlogiAnnotated) {
+      _zlogiAktiven = true;
+      _updateZlogiBtn();
+      renderReader();
+      return;
+    }
+
+    // Prvi vklop za to besedilo → klic na zaledje
+    _zlogiLoading = true;
+    _updateZlogiBtn();
+    try {
+      _zlogiAnnotated = await _fetchZlogi(_readerPlainText);
+      _zlogiAktiven = true;
+    } catch (err) {
+      alert('Napaka pri nalaganju zlogov: ' + err.message);
+    } finally {
+      _zlogiLoading = false;
+      _updateZlogiBtn();
+      renderReader();
+    }
+  }
+
+  // ── Saved texts (localStorage) ──
+  function getSaved() {
+    try { return JSON.parse(localStorage.getItem('ucni_most_texts') || '[]'); }
+    catch { return []; }
+  }
+  function setSaved(arr) {
+    localStorage.setItem('ucni_most_texts', JSON.stringify(arr));
+  }
+
+  function savePastedText() {
+    const txt = document.getElementById('pasteArea').value.trim();
+    if (!txt) return;
+    const saved = getSaved();
+    saved.unshift({
+      id: Date.now(),
+      date: new Date().toLocaleDateString('sl-SI'),
+      preview: txt.slice(0, 80),
+      full: txt,
+    });
+    setSaved(saved);
+    document.getElementById('pasteArea').value = '';
+    alert('Besedilo shranjeno!');
+  }
+
+  function renderSavedList() {
+    const wrap = document.getElementById('savedListWrap');
+    const saved = getSaved();
+    if (!saved.length) {
+      wrap.innerHTML = '<p class="saved-empty">Še nimate shranjenih besedil.</p>';
+      return;
+    }
+    wrap.innerHTML = '';
+    const list = document.createElement('div');
+    list.className = 'saved-list';
+    saved.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'saved-item';
+      el.innerHTML = `
+        <div class="saved-item-info">
+          <div class="saved-item-title">${escHtml(item.preview)}…</div>
+          <div class="saved-item-meta">${item.date}</div>
+        </div>
+        <div class="saved-item-actions">
+          <button class="icon-btn open" data-id="${item.id}">Odpri</button>
+          <button class="icon-btn del"  data-id="${item.id}">Izbriši</button>
+        </div>`;
+      list.appendChild(el);
+    });
+    wrap.appendChild(list);
+
+    wrap.querySelectorAll('.icon-btn.open').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const item = getSaved().find(i => i.id == this.dataset.id);
+        if (item) { setReaderText(item.full); showScreen('screen-reader'); }
+      });
+    });
+    wrap.querySelectorAll('.icon-btn.del').forEach(btn => {
+      btn.addEventListener('click', function () {
+        setSaved(getSaved().filter(i => i.id != this.dataset.id));
+        renderSavedList();
+      });
+    });
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ══════════════════════════════════════════════
+  // ── Branje na glas (ElevenLabs + rezerva brskalnik) ──
+  // ══════════════════════════════════════════════
+
+  let ttsState = 'stopped'; // 'stopped' | 'loading' | 'playing' | 'paused'
+  let ttsAudio  = null;     // HTML Audio element (ElevenLabs)
+  let ttsAudioUrl = null;   // blob URL za sprostitev
+  let ttsAbort  = null;     // AbortController za preklic nalaganja
+  let ttsUtteranceText = '';
+  let ttsWordSpans = [];
+
+  // Besede v readerBox zavijemo v <span class="tts-word"> (za morebitno označevanje)
+  function wrapWordsForTTS() {
+    const box = document.getElementById('readerBox');
+    box.querySelectorAll('.tts-word').forEach(span => {
+      span.parentNode.replaceChild(document.createTextNode(span.textContent), span);
+    });
+    box.normalize();
+
+    ttsWordSpans = [];
+    let offset = 0;
+    let utterance = '';
+
+    const walker = document.createTreeWalker(box, NodeFilter.SHOW_TEXT, null, false);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+
+    textNodes.forEach(textNode => {
+      const text = textNode.textContent;
+      const frag = document.createDocumentFragment();
+      text.split(/(\s+)/).forEach(token => {
+        if (!token) return;
+        if (/\S/.test(token)) {
+          const span = document.createElement('span');
+          span.className = 'tts-word';
+          span.dataset.start = offset;
+          span.textContent = token;
+          frag.appendChild(span);
+          ttsWordSpans.push({ el: span, start: offset });
+        } else {
+          frag.appendChild(document.createTextNode(token));
+        }
+        utterance += token;
+        offset += token.length;
+      });
+      textNode.parentNode.replaceChild(frag, textNode);
     });
 
-    const data = await response.json();
-
-    return new Response(
-      JSON.stringify(data),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    ttsUtteranceText = utterance.trim();
   }
-});
+
+  function clearHighlight() {
+    document.querySelectorAll('.tts-word.tts-active').forEach(el => el.classList.remove('tts-active'));
+  }
+
+  // ── Sledenje besede prek časovnih oznak iz funkcije "govor" ──
+  // ttsWordTimes: [{ start, end, span }] — pripravljeno iz alignmenta, ki ga
+  // (po nadgradnji) vrne funkcija "govor" skupaj z zvokom. Če časovnih
+  // oznak ni ali se ne ujemajo z besedilom, ostane prazno in poudarjanja ni.
+  let ttsWordTimes = [];
+  let ttsCurrentWordIdx = -1;
+  let ttsHasAlignment = false;
+
+  function _b64ToUint8(b64) {
+    const bin = atob(b64);
+    const len = bin.length;
+    const out = new Uint8Array(len);
+    for (let i = 0; i < len; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  function _buildTTSWordTimes(alignment) {
+    ttsWordTimes = [];
+    ttsCurrentWordIdx = -1;
+    ttsHasAlignment = false;
+    if (!alignment) return;
+
+    const chars  = alignment.characters;
+    const starts = alignment.character_start_times_seconds;
+    const ends   = alignment.character_end_times_seconds;
+
+    if (!Array.isArray(chars) || !Array.isArray(starts) || !Array.isArray(ends)) return;
+    if (chars.length === 0) return;
+    if (chars.length !== starts.length || chars.length !== ends.length) return;
+    if (!Array.isArray(ttsWordSpans) || ttsWordSpans.length === 0) return;
+
+    // Iz zaporedja znakov sestavi besede (zaporedni ne-presledkovni znaki).
+    const alignWords = [];
+    let curStart = 0, curEnd = 0, inWord = false;
+    for (let i = 0; i < chars.length; i++) {
+      const isWs = /\s/.test(chars[i]);
+      if (!isWs) {
+        if (!inWord) { curStart = starts[i]; inWord = true; }
+        curEnd = ends[i];
+      } else if (inWord) {
+        alignWords.push({ start: curStart, end: curEnd });
+        inWord = false;
+      }
+    }
+    if (inWord) alignWords.push({ start: curStart, end: curEnd });
+
+    if (alignWords.length === 0) return;
+    // Če se število besed ne ujema, varno opustimo poudarjanje.
+    if (alignWords.length !== ttsWordSpans.length) return;
+    // Če spanov ni več v DOM-u (npr. drug izris), tudi opustimo.
+    for (let i = 0; i < ttsWordSpans.length; i++) {
+      if (!ttsWordSpans[i].el || !document.body.contains(ttsWordSpans[i].el)) return;
+    }
+
+    ttsWordTimes = alignWords.map((w, i) => ({
+      start: w.start,
+      end:   w.end,
+      span:  ttsWordSpans[i].el,
+    }));
+    ttsHasAlignment = true;
+  }
+
+  function _findTTSWordIdxAt(t) {
+    const n = ttsWordTimes.length;
+    for (let i = 0; i < n; i++) {
+      const w = ttsWordTimes[i];
+      if (t < w.start) return i - 1;
+      if (t < w.end)   return i;
+    }
+    return n - 1;
+  }
+
+  function _onTTSTimeUpdate() {
+    if (!ttsHasAlignment || !ttsAudio || ttsWordTimes.length === 0) return;
+    const idx = _findTTSWordIdxAt(ttsAudio.currentTime);
+    if (idx === ttsCurrentWordIdx) return;
+    if (ttsCurrentWordIdx >= 0 && ttsWordTimes[ttsCurrentWordIdx]) {
+      ttsWordTimes[ttsCurrentWordIdx].span.classList.remove('tts-active');
+    }
+    if (idx >= 0 && ttsWordTimes[idx]) {
+      ttsWordTimes[idx].span.classList.add('tts-active');
+    }
+    ttsCurrentWordIdx = idx;
+  }
+
+  function updateTTSButtons() {
+    const btnPlay  = document.getElementById('btnPlay');
+    const btnPause = document.getElementById('btnPause');
+    const btnStop  = document.getElementById('btnStop');
+    const loading  = ttsState === 'loading';
+    const playing  = ttsState === 'playing';
+    const stopped  = ttsState === 'stopped';
+
+    btnPlay.disabled  = playing || loading;
+    btnPause.disabled = !playing;
+    btnStop.disabled  = stopped;
+
+    if (loading) {
+      btnPlay.classList.add('loading');
+      btnPlay.textContent = '⏳ Nalaganje…';
+    } else {
+      btnPlay.classList.remove('loading');
+      btnPlay.textContent = '▶ Predvajaj';
+    }
+  }
+
+  function _freeTtsAudio() {
+    if (ttsAudio) {
+      ttsAudio.pause();
+      ttsAudio.src = '';
+      ttsAudio = null;
+    }
+    if (ttsAudioUrl) {
+      URL.revokeObjectURL(ttsAudioUrl);
+      ttsAudioUrl = null;
+    }
+  }
+
+  // Skupna ElevenLabs funkcija – vrne Audio element ali vrže napako.
+  // Združljivost za nazaj: funkcija "govor" lahko vrne ali navaden binarni
+  // mp3 (kot doslej) ali JSON s polji { audio_base64, alignment }. V obeh
+  // primerih dobimo predvajalni Audio element; alignment je v drugem primeru
+  // na voljo za sledenje besede med branjem.
+  async function _fetchElevenLabsAudio(tekst, abortSignal) {
+    const resp = await fetch(GOVOR_URL, {
+      method: 'POST',
+      signal: abortSignal,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ besedilo: tekst }),
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+    const ct = (resp.headers.get('Content-Type') || '').toLowerCase();
+    let blob = null;
+    let alignment = null;
+
+    if (ct.includes('application/json')) {
+      let data = null;
+      try { data = await resp.json(); } catch (_) { data = null; }
+      if (data && typeof data.audio_base64 === 'string' && data.audio_base64.length > 0) {
+        try {
+          const bytes = _b64ToUint8(data.audio_base64);
+          blob = new Blob([bytes], { type: 'audio/mpeg' });
+        } catch (_) { blob = null; }
+        if (data.alignment && typeof data.alignment === 'object') {
+          alignment = data.alignment;
+        }
+      }
+      if (!blob) {
+        const msg = (data && data.error) ? data.error : 'Govor ni vrnil zvoka.';
+        throw new Error(msg);
+      }
+    } else {
+      blob = await resp.blob();
+    }
+
+    const url   = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    return { audio, url, alignment };
+  }
+
+  // Rezerva – brskalnikov Web Speech API
+  function _browserTTS(tekst, onEnd) {
+    if (!('speechSynthesis' in window)) { onEnd(); return; }
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(tekst);
+    utt.lang = 'sl-SI';
+    utt.rate = ttsSpeedRate;
+    utt.onend  = onEnd;
+    utt.onerror = onEnd;
+    window.speechSynthesis.speak(utt);
+  }
+
+  // Zastavica: ali trenutno predvaja brskalniški TTS (speechSynthesis)
+  let ttsBrowserFallback = false;
+
+  async function playTTS() {
+    // Nadaljevanje po premoru – ElevenLabs audio element
+    if (ttsState === 'paused' && ttsAudio) {
+      _applyPreservesPitch(ttsAudio);
+      ttsAudio.playbackRate = ttsSpeedRate;
+      ttsAudio.play();
+      ttsState = 'playing';
+      updateTTSButtons();
+      return;
+    }
+    // Nadaljevanje po premoru – brskalniški glas (speechSynthesis)
+    if (ttsState === 'paused' && ttsBrowserFallback) {
+      window.speechSynthesis.resume();
+      ttsState = 'playing';
+      updateTTSButtons();
+      return;
+    }
+    // Predvajanje od začetka – audio element je že naložen (po Ustavi)
+    if (ttsState === 'stopped' && ttsAudio) {
+      _applyPreservesPitch(ttsAudio);
+      ttsAudio.playbackRate = ttsSpeedRate;
+      ttsAudio.currentTime = 0;
+      ttsCurrentWordIdx = -1;
+      clearHighlight();
+      ttsAudio.play();
+      ttsState = 'playing';
+      updateTTSButtons();
+      return;
+    }
+    if (ttsState === 'playing' || ttsState === 'loading') return;
+    if (!ttsUtteranceText) { alert('V bralniku ni besedila za branje.'); return; }
+
+    ttsBrowserFallback = false;
+    ttsAbort = new AbortController();
+    ttsState = 'loading';
+    updateTTSButtons();
+
+    try {
+      const { audio, url, alignment } = await _fetchElevenLabsAudio(ttsUtteranceText, ttsAbort.signal);
+      if (ttsState !== 'loading') { URL.revokeObjectURL(url); return; } // prekinjeno med nalaganjem
+
+      _freeTtsAudio();
+      ttsAudio    = audio;
+      ttsAudioUrl = url;
+      _applyPreservesPitch(ttsAudio);
+      ttsAudio.playbackRate = ttsSpeedRate;
+
+      // Pripravi sledenje besede; če alignmenta ni (stara različica
+      // funkcije "govor"), se zvok normalno predvaja brez poudarjanja.
+      try { _buildTTSWordTimes(alignment); } catch (_) { ttsHasAlignment = false; }
+      ttsAudio.ontimeupdate = _onTTSTimeUpdate;
+
+      ttsAudio.onended = () => {
+        ttsState = 'stopped';
+        ttsCurrentWordIdx = -1;
+        clearHighlight();
+        _freeTtsAudio();
+        updateTTSButtons();
+      };
+      ttsAudio.onerror = () => {
+        ttsState = 'stopped';
+        ttsCurrentWordIdx = -1;
+        clearHighlight();
+        _freeTtsAudio();
+        updateTTSButtons();
+      };
+
+      await ttsAudio.play();
+      ttsState = 'playing';
+      updateTTSButtons();
+    } catch (err) {
+      if (err.name === 'AbortError') { ttsState = 'stopped'; updateTTSButtons(); return; }
+      // Rezerva – brskalnikov glas
+      console.warn('ElevenLabs TTS ni uspel, preklop na brskalnik:', err);
+      ttsBrowserFallback = true;
+      ttsState = 'playing';
+      updateTTSButtons();
+      _browserTTS(ttsUtteranceText, () => {
+        ttsBrowserFallback = false;
+        ttsState = 'stopped';
+        clearHighlight();
+        updateTTSButtons();
+      });
+    }
+  }
+
+  function pauseTTS() {
+    if (ttsState === 'playing') {
+      if (ttsAudio) {
+        ttsAudio.pause();
+      } else if (ttsBrowserFallback && 'speechSynthesis' in window) {
+        window.speechSynthesis.pause();
+      }
+      ttsState = 'paused';
+      updateTTSButtons();
+    }
+  }
+
+  function stopTTS() {
+    if (ttsAbort) { ttsAbort.abort(); ttsAbort = null; }
+    if (ttsAudio) {
+      ttsAudio.pause();
+      ttsAudio.currentTime = 0;
+    }
+    if (ttsBrowserFallback && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      ttsBrowserFallback = false;
+    }
+    ttsState = 'stopped';
+    ttsCurrentWordIdx = -1;
+    clearHighlight();
+    updateTTSButtons();
+  }
+
+  // Hitrost – tri tipke (Počasi 0.8 / Normalno 1.0 / Hitro 1.2)
+  let ttsSpeedRate = parseFloat(localStorage.getItem('ucni_most_tts_speed') || '1.0');
+
+  function _applyPreservesPitch(audio) {
+    audio.preservesPitch      = true;
+    audio.webkitPreservesPitch = true;
+    audio.mozPreservesPitch    = true;
+  }
+
+  function setTTSSpeed(rate) {
+    ttsSpeedRate = rate;
+    localStorage.setItem('ucni_most_tts_speed', String(rate));
+    ['ttsSpeedSlow','ttsSpeedNormal','ttsSpeedFast'].forEach(id => {
+      document.getElementById(id).classList.remove('tts-speed-active');
+    });
+    const idMap = { 0.8: 'ttsSpeedSlow', 1.0: 'ttsSpeedNormal', 1.2: 'ttsSpeedFast' };
+    const btnId = idMap[rate];
+    if (btnId) document.getElementById(btnId).classList.add('tts-speed-active');
+    if (ttsAudio) {
+      _applyPreservesPitch(ttsAudio);
+      ttsAudio.playbackRate = rate;
+    }
+  }
+
+  // Ob nalaganju strani obnovi shranjeno hitrost
+  (function initTTSSpeed() {
+    const idMap = { 0.8: 'ttsSpeedSlow', 1.0: 'ttsSpeedNormal', 1.2: 'ttsSpeedFast' };
+    ['ttsSpeedSlow','ttsSpeedNormal','ttsSpeedFast'].forEach(id => {
+      document.getElementById(id).classList.remove('tts-speed-active');
+    });
+    const btnId = idMap[ttsSpeedRate] || 'ttsSpeedNormal';
+    document.getElementById(btnId).classList.add('tts-speed-active');
+  })();
+
+  // ══════════════════════════════════════════════
+  // ── Razumevanje – AI klici ──
+  // ══════════════════════════════════════════════
+
+  const SUPABASE_URL      = 'https://qjqdaqanymqlgzlknbas.supabase.co/functions/v1/ai';
+  const GOVOR_URL         = 'https://qjqdaqanymqlgzlknbas.supabase.co/functions/v1/govor';
+  const SUPABASE_ANON_KEY = 'TUKAJ_PRILEPI_ANON_KLJUC';
+
+  const AI_NAVODILA = {
+    simplify: 'Prepiši besedilo bolj enostavno. Uporabi kratke stavke. Izberi preproste besede. Piši tako, da bo razumel otrok z disleksijo, ki ima 10 let. Ne dodajaj ničesar novega, samo poenostavi.',
+    words: 'Poišči težke ali neznane besede v besedilu. Za vsako besedo napiši kratko in preprosto razlago v slovenščini. Piši tako, da bo razumel otrok z disleksijo. Uporabi obliko: Beseda: razlaga.',
+    summary: 'Napiši kratek povzetek besedila v slovenščini. Povzetek naj bo kratek – največ 5 stavkov. Uporabi preproste besede in kratke stavke. Piši za otroka z disleksijo, ki ima 10 let.',
+    split: 'Razdeli besedilo na manjše dele. Vsak del naj ima naslov in kratko razlago v 2–3 stavkih. Uporabi preproste besede. Piši za otroka z disleksijo.',
+  };
+
+  let aiTtsAudio    = null;
+  let aiTtsAudioUrl = null;
+  let aiTtsAbort    = null;
+  let aiTtsState    = 'stopped'; // 'stopped' | 'loading' | 'playing'
+
+  function getReaderText() {
+    const box = document.getElementById('readerBox');
+    return box ? box.innerText.trim() : '';
+  }
+
+  async function callAI(tip) {
+    const besedilo = getReaderText();
+    if (!besedilo) {
+      showAiError('V bralniku ni besedila. Najprej prilepi ali odpri besedilo v bralniku.');
+      return;
+    }
+
+    const navodilo = AI_NAVODILA[tip];
+
+    setAiLoading(true);
+    hideAiResult();
+    hideAiError();
+    disableAiBtns(true);
+
+    try {
+      const resp = await fetch(SUPABASE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ besedilo, navodilo }),
+      });
+
+      if (!resp.ok) {
+        const txt = await resp.text().catch(() => '');
+        throw new Error('Strežnik je vrnil napako ' + resp.status + (txt ? ': ' + txt : ''));
+      }
+
+      const data = await resp.json();
+      // Anthropic API vrne besedilo v data.content (array blokov) ali zavito v data.rezultat ipd.
+      let rezultat = data.rezultat || data.result || data.odgovor || '';
+      if (!rezultat) {
+        const raw = data.text || data.content || '';
+        if (Array.isArray(raw)) {
+          rezultat = raw.filter(b => b.type === 'text').map(b => b.text).join('\n');
+        } else {
+          rezultat = raw;
+        }
+      }
+
+      if (!rezultat) throw new Error('Strežnik ni vrnil besedila.');
+
+      showAiResult(rezultat);
+    } catch (err) {
+      showAiError('Napaka pri klicu umetne inteligence: ' + err.message);
+    } finally {
+      setAiLoading(false);
+      disableAiBtns(false);
+    }
+  }
+
+  function setAiLoading(on) {
+    document.getElementById('aiLoading').classList.toggle('visible', on);
+  }
+
+  function showAiResult(txt) {
+    stopAiTTS();
+    hideMmResult();
+    document.getElementById('aiResultBox').textContent = txt;
+    document.getElementById('aiResultWrap').classList.add('visible');
+    document.getElementById('btnAiTts').textContent = '🔊 Preberi na glas';
+    document.getElementById('btnAiTts').classList.remove('stop');
+  }
+
+  function hideAiResult() {
+    stopAiTTS();
+    document.getElementById('aiResultWrap').classList.remove('visible');
+  }
+
+  function showAiError(msg) {
+    const el = document.getElementById('aiError');
+    el.textContent = msg;
+    el.classList.add('visible');
+  }
+
+  function hideAiError() {
+    document.getElementById('aiError').classList.remove('visible');
+  }
+
+  function disableAiBtns(dis) {
+    document.querySelectorAll('.ai-btn').forEach(b => b.disabled = dis);
+  }
+
+  function toggleAiTTS() {
+    if (aiTtsState === 'playing' || aiTtsState === 'loading') {
+      stopAiTTS();
+    } else {
+      playAiTTS();
+    }
+  }
+
+  async function playAiTTS() {
+    const txt = document.getElementById('aiResultBox').textContent.trim();
+    if (!txt) return;
+    if (aiTtsState === 'playing' || aiTtsState === 'loading') return;
+
+    aiTtsAbort = new AbortController();
+    aiTtsState = 'loading';
+    updateAiTtsBtn();
+
+    try {
+      const { audio, url } = await _fetchElevenLabsAudio(txt, aiTtsAbort.signal);
+      if (aiTtsState !== 'loading') { URL.revokeObjectURL(url); return; }
+
+      if (aiTtsAudio) { aiTtsAudio.pause(); aiTtsAudio.src = ''; }
+      if (aiTtsAudioUrl) URL.revokeObjectURL(aiTtsAudioUrl);
+      aiTtsAudio    = audio;
+      aiTtsAudioUrl = url;
+
+      aiTtsAudio.onended = () => {
+        aiTtsState = 'stopped';
+        if (aiTtsAudioUrl) { URL.revokeObjectURL(aiTtsAudioUrl); aiTtsAudioUrl = null; }
+        aiTtsAudio = null;
+        updateAiTtsBtn();
+      };
+      aiTtsAudio.onerror = () => {
+        aiTtsState = 'stopped';
+        updateAiTtsBtn();
+      };
+
+      await aiTtsAudio.play();
+      aiTtsState = 'playing';
+      updateAiTtsBtn();
+    } catch (err) {
+      if (err.name === 'AbortError') { aiTtsState = 'stopped'; updateAiTtsBtn(); return; }
+      // Rezerva – brskalnikov glas
+      console.warn('AI TTS rezerva brskalnik:', err);
+      aiTtsState = 'playing';
+      updateAiTtsBtn();
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utt = new SpeechSynthesisUtterance(txt);
+        utt.lang = 'sl-SI'; utt.rate = 0.9;
+        utt.onend = utt.onerror = () => { aiTtsState = 'stopped'; updateAiTtsBtn(); };
+        window.speechSynthesis.speak(utt);
+      } else {
+        aiTtsState = 'stopped'; updateAiTtsBtn();
+      }
+    }
+  }
+
+  function stopAiTTS() {
+    if (aiTtsAbort) { aiTtsAbort.abort(); aiTtsAbort = null; }
+    if (aiTtsAudio) { aiTtsAudio.pause(); aiTtsAudio.src = ''; aiTtsAudio = null; }
+    if (aiTtsAudioUrl) { URL.revokeObjectURL(aiTtsAudioUrl); aiTtsAudioUrl = null; }
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    aiTtsState = 'stopped';
+    updateAiTtsBtn();
+  }
+
+  function updateAiTtsBtn() {
+    const btn = document.getElementById('btnAiTts');
+    if (!btn) return;
+    if (aiTtsState === 'loading') {
+      btn.textContent = '⏳ Nalaganje…';
+      btn.classList.remove('stop');
+    } else if (aiTtsState === 'playing') {
+      btn.textContent = '⏹ Ustavi branje';
+      btn.classList.add('stop');
+    } else {
+      btn.textContent = '🔊 Preberi na glas';
+      btn.classList.remove('stop');
+    }
+  }
+
+  function useAiResultInReader() {
+    const txt = document.getElementById('aiResultBox').textContent.trim();
+    if (!txt) return;
+    setReaderText(txt);
+    showScreen('screen-reader');
+  }
+
+  // ══════════════════════════════════════════════
+  // ── Ponavljanje ──
+  // ══════════════════════════════════════════════
+
+  let kvizVprasanja = [];
+  let napacneIndeksi = [];
+
+  async function callPonavljanje() {
+    const besedilo = getReaderText();
+    if (!besedilo) {
+      showPonError('V bralniku ni besedila. Najprej prilepi ali odpri besedilo v bralniku.');
+      return;
+    }
+
+    const navodilo = `Odgovori IZKLJUČNO z veljavnim JSON-om (brez markdown oznak, brez dodatnega besedila, brez \`\`\`json). JSON mora biti točno v tej obliki:
+{"kartice":[{"pojem":"...","razlaga":"..."}],"kviz":[{"vprasanje":"...","moznosti":["...","...","..."],"pravilni_index":0}],"tezke_besede":[{"beseda":"...","razlaga":"..."}]}
+
+Naredi 5 kartic, 5 vprašanj v kvizu (vsako s 3 možnostmi) in seznam težkih besed (kolikor jih je v besedilu, vsaj 3). Vse v slovenščini, kratki stavki, preprost jezik, primerno otroku z disleksijo.`;
+
+    setPonLoading(true);
+    hidePonResult();
+    hidePonError();
+    document.getElementById('btnPripravi').disabled = true;
+
+    try {
+      const resp = await fetch(SUPABASE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ besedilo, navodilo }),
+      });
+
+      if (!resp.ok) {
+        const txt = await resp.text().catch(() => '');
+        throw new Error('Strežnik je vrnil napako ' + resp.status + (txt ? ': ' + txt : ''));
+      }
+
+      const data = await resp.json();
+
+      // Pridobi surovo besedilo odgovora
+      let raw = data.rezultat || data.result || data.odgovor || '';
+      if (!raw) {
+        const content = data.text || data.content || '';
+        if (Array.isArray(content)) {
+          raw = content.filter(b => b.type === 'text').map(b => b.text).join('\n');
+        } else {
+          raw = content;
+        }
+      }
+
+      if (!raw) throw new Error('Strežnik ni vrnil besedila.');
+
+      // Varno razčleni JSON — odstrani morebitne ```json oznake
+      let jsonStr = raw.trim();
+      jsonStr = jsonStr.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+
+      let gradivo;
+      try {
+        gradivo = JSON.parse(jsonStr);
+      } catch (e) {
+        showPonError('Poskusi znova — odgovor ni bil v pričakovani obliki.');
+        return;
+      }
+
+      renderPonavljanje(gradivo);
+
+    } catch (err) {
+      showPonError('Napaka: ' + err.message + ' — Poskusi znova.');
+    } finally {
+      setPonLoading(false);
+      document.getElementById('btnPripravi').disabled = false;
+    }
+  }
+
+  function setPonLoading(on) {
+    document.getElementById('ponLoading').classList.toggle('visible', on);
+  }
+
+  function hidePonResult() {
+    document.getElementById('ponResultWrap').style.display = 'none';
+  }
+
+  function showPonError(msg) {
+    const el = document.getElementById('ponError');
+    el.textContent = msg;
+    el.classList.add('visible');
+  }
+
+  function hidePonError() {
+    document.getElementById('ponError').classList.remove('visible');
+  }
+
+  function renderPonavljanje(gradivo) {
+    // ── Kartice ──
+    const grid = document.getElementById('karticGrid');
+    grid.innerHTML = '';
+    (gradivo.kartice || []).forEach(k => {
+      const wrap = document.createElement('div');
+      wrap.className = 'karta-wrap';
+      wrap.innerHTML = `<div class="karta-inner">
+        <div class="karta-front">${escHtml(k.pojem)}</div>
+        <div class="karta-back">${escHtml(k.razlaga)}</div>
+      </div>`;
+      wrap.addEventListener('click', () => wrap.classList.toggle('flipped'));
+      grid.appendChild(wrap);
+    });
+
+    // ── Kviz ──
+    kvizVprasanja = gradivo.kviz || [];
+    napacneIndeksi = [];
+    renderKviz(kvizVprasanja.map((_, i) => i));
+
+    // ── Težke besede ──
+    const tezke = document.getElementById('tezkeWrap');
+    tezke.innerHTML = '';
+    (gradivo.tezke_besede || []).forEach(b => {
+      const el = document.createElement('div');
+      el.className = 'tezka-beseda';
+      el.innerHTML = `<div class="tezka-beseda-ime">${escHtml(b.beseda)}</div><div class="tezka-beseda-razlaga">${escHtml(b.razlaga)}</div>`;
+      tezke.appendChild(el);
+    });
+
+    document.getElementById('ponResultWrap').style.display = 'block';
+  }
+
+  function renderKviz(indeksi) {
+    const wrap = document.getElementById('kvizWrap');
+    wrap.innerHTML = '';
+    document.getElementById('btnPonoviNapacne').style.display = 'none';
+
+    indeksi.forEach(qi => {
+      const q = kvizVprasanja[qi];
+      if (!q) return;
+      const div = document.createElement('div');
+      div.className = 'kviz-vprasanje';
+      div.dataset.qi = qi;
+      div.dataset.answered = 'false';
+
+      let moznostiHtml = q.moznosti.map((m, mi) =>
+        `<button class="kviz-moznost" data-mi="${mi}" onclick="odgovoriKviz(this,${qi},${mi})">${escHtml(m)}</button>`
+      ).join('');
+
+      div.innerHTML = `<div class="kviz-vprasanje-text">${escHtml(q.vprasanje)}</div>
+        <div class="kviz-moznosti">${moznostiHtml}</div>
+        <div class="kviz-feedback"></div>`;
+      wrap.appendChild(div);
+    });
+  }
+
+  function odgovoriKviz(btn, qi, mi) {
+    const q = kvizVprasanja[qi];
+    const vprasanjeDiv = btn.closest('.kviz-vprasanje');
+    if (vprasanjeDiv.dataset.answered === 'true') return;
+    vprasanjeDiv.dataset.answered = 'true';
+
+    const feedback = vprasanjeDiv.querySelector('.kviz-feedback');
+    vprasanjeDiv.querySelectorAll('.kviz-moznost').forEach(b => b.disabled = true);
+
+    if (mi === q.pravilni_index) {
+      btn.classList.add('pravilna');
+      feedback.textContent = '✅ Pravilno!';
+      feedback.className = 'kviz-feedback show ok';
+      // Odstrani iz napačnih, če je bil tam
+      napacneIndeksi = napacneIndeksi.filter(i => i !== qi);
+    } else {
+      btn.classList.add('napacna');
+      vprasanjeDiv.querySelectorAll('.kviz-moznost')[q.pravilni_index].classList.add('pravilna');
+      feedback.textContent = '❌ Napačno. Pravilni odgovor je označen z zeleno.';
+      feedback.className = 'kviz-feedback show err';
+      if (!napacneIndeksi.includes(qi)) napacneIndeksi.push(qi);
+    }
+
+    // Pokaži gumb za ponavljanje napačnih, če so kakšne napake
+    if (napacneIndeksi.length > 0) {
+      document.getElementById('btnPonoviNapacne').style.display = 'inline-flex';
+    }
+  }
+
+  function ponoviNapacne() {
+    if (!napacneIndeksi.length) return;
+    const indeksi = [...napacneIndeksi];
+    napacneIndeksi = [];
+    renderKviz(indeksi);
+  }
+
+  // ══════════════════════════════════════════════
+  // ── Miselni vzorec ──
+  // ══════════════════════════════════════════════
+
+  async function callMiselniVzorec() {
+    const besedilo = getReaderText();
+    if (!besedilo) {
+      showAiError('V bralniku ni besedila. Najprej prilepi ali odpri besedilo v bralniku.');
+      return;
+    }
+
+    const navodilo = `Odgovori IZKLJUČNO z veljavnim JSON-om (brez markdown oznak, brez backtick ograj, brez dodatnega besedila). JSON mora biti točno v tej obliki:
+{"sredisce":"glavna tema (1–3 besede)","veje":[{"naslov":"ključni pojem","podtocke":["kratka podrobnost","kratka podrobnost"]}]}
+
+Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren za otroka z disleksijo. Vrednosti naj bodo kratke (največ 4 besede na polje).`;
+
+    setAiLoading(true);
+    hideMmResult();
+    hideAiResult();
+    hideAiError();
+    disableAiBtns(true);
+
+    try {
+      const resp = await fetch(SUPABASE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ besedilo, navodilo }),
+      });
+
+      if (!resp.ok) {
+        const txt = await resp.text().catch(() => '');
+        throw new Error('Strežnik je vrnil napako ' + resp.status + (txt ? ': ' + txt : ''));
+      }
+
+      const data = await resp.json();
+
+      let raw = data.rezultat || data.result || data.odgovor || '';
+      if (!raw) {
+        const content = data.text || data.content || '';
+        if (Array.isArray(content)) {
+          raw = content.filter(b => b.type === 'text').map(b => b.text).join('\n');
+        } else {
+          raw = content;
+        }
+      }
+      if (!raw) throw new Error('Strežnik ni vrnil besedila.');
+
+      let jsonStr = raw.trim()
+        .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+
+      let vzorec;
+      try { vzorec = JSON.parse(jsonStr); }
+      catch (e) {
+        showAiError('Poskusi znova — odgovor ni bil v pričakovani obliki.');
+        return;
+      }
+
+      showMmResult(vzorec);
+
+    } catch (err) {
+      showAiError('Napaka pri klicu umetne inteligence: ' + err.message);
+    } finally {
+      setAiLoading(false);
+      disableAiBtns(false);
+    }
+  }
+
+  function showMmResult(data) {
+    document.getElementById('mmSvgWrap').innerHTML = renderMiselniVzorec(data);
+    document.getElementById('mmResultWrap').classList.add('visible');
+  }
+
+  function hideMmResult() {
+    document.getElementById('mmResultWrap').classList.remove('visible');
+  }
+
+  function printMiselniVzorec() {
+    const svgHtml = document.getElementById('mmSvgWrap').innerHTML;
+    const win = window.open('', '_blank');
+    win.document.write(
+      '<!DOCTYPE html><html><head><title>Miselni vzorec</title>' +
+      '<style>body{margin:0;padding:16px;}svg{width:100%;height:auto;}</style>' +
+      '</head><body>' + svgHtml + '</body></html>'
+    );
+    win.document.close();
+    win.focus();
+    win.print();
+  }
+
+  function renderMiselniVzorec(data) {
+    const { sredisce, veje } = data;
+    const paleta = [
+      { main: '#4a7ecf', light: '#bdd4f6' },
+      { main: '#27ae60', light: '#a8dfc2' },
+      { main: '#e67e22', light: '#f5c99a' },
+      { main: '#8e44ad', light: '#d0a9e0' },
+      { main: '#c0392b', light: '#f0a09a' },
+      { main: '#16a085', light: '#88d8cc' },
+      { main: '#c2185b', light: '#f0a0c0' },
+    ];
+
+    const N = Math.min((veje || []).length, 7);
+    const W = 1100, H = 900;
+    const cx = W / 2, cy = H / 2;
+    const branchDist = 230;
+    const subDist = 150;
+    const crx = 88, cry = 44;
+
+    function esc(s) {
+      return String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function wrapWords(text, maxCh) {
+      const words = String(text).split(' ');
+      const lines = [];
+      let cur = '';
+      for (const w of words) {
+        const test = cur ? cur + ' ' + w : w;
+        if (test.length <= maxCh) { cur = test; }
+        else { if (cur) lines.push(cur); cur = w; }
+      }
+      if (cur) lines.push(cur);
+      return lines;
+    }
+
+    function svgTextLines(x, y, text, opts) {
+      const { fill = '#fff', size = 13, weight = '400', maxCh = 13 } = opts || {};
+      const lines = wrapWords(text, maxCh);
+      const lh = size * 1.35;
+      const startY = y - (lines.length - 1) * lh / 2;
+      return lines.map((l, i) =>
+        `<text x="${x.toFixed(1)}" y="${(startY + i * lh).toFixed(1)}" ` +
+        `text-anchor="middle" dominant-baseline="middle" ` +
+        `font-family="Lexend,sans-serif" font-size="${size}" font-weight="${weight}" fill="${fill}">` +
+        esc(l) + '</text>'
+      ).join('');
+    }
+
+    let out = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="min-width:620px;display:block;">`;
+    out += `<rect width="${W}" height="${H}" fill="#fafafa" rx="16"/>`;
+
+    // Center node
+    out += `<ellipse cx="${cx}" cy="${cy}" rx="${crx}" ry="${cry}" fill="#1a1a2e"/>`;
+    out += svgTextLines(cx, cy, sredisce || '', { fill: '#fff', size: 16, weight: '700', maxCh: 11 });
+
+    for (let i = 0; i < N; i++) {
+      const ang = ((i * 360 / N) - 90) * Math.PI / 180;
+      const c = paleta[i % paleta.length];
+
+      const ex = cx + crx * Math.cos(ang);
+      const ey = cy + cry * Math.sin(ang);
+      const bx = cx + branchDist * Math.cos(ang);
+      const by = cy + branchDist * Math.sin(ang);
+
+      // Main line
+      out += `<line x1="${ex.toFixed(1)}" y1="${ey.toFixed(1)}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}" ` +
+             `stroke="${c.main}" stroke-width="5" stroke-linecap="round"/>`;
+
+      // Branch node
+      out += `<ellipse cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" rx="70" ry="28" fill="${c.main}"/>`;
+      out += svgTextLines(bx, by, (veje[i] || {}).naslov || '', { fill: '#fff', size: 12, weight: '600', maxCh: 12 });
+
+      // Sub-points
+      const subs = ((veje[i] || {}).podtocke || []).slice(0, 4);
+      const spacing = 44;
+      const totalOffset = (subs.length - 1) * spacing / 2;
+      const px = -Math.sin(ang);
+      const py = Math.cos(ang);
+
+      subs.forEach((sub, j) => {
+        const off = j * spacing - totalOffset;
+        const sx = bx + subDist * Math.cos(ang) + px * off;
+        const sy = by + subDist * Math.sin(ang) + py * off;
+        const rw = 112, rh = 34;
+
+        out += `<line x1="${bx.toFixed(1)}" y1="${by.toFixed(1)}" x2="${sx.toFixed(1)}" y2="${sy.toFixed(1)}" ` +
+               `stroke="${c.light}" stroke-width="2.5" stroke-linecap="round"/>`;
+        out += `<rect x="${(sx - rw / 2).toFixed(1)}" y="${(sy - rh / 2).toFixed(1)}" ` +
+               `width="${rw}" height="${rh}" rx="9" fill="${c.light}"/>`;
+        out += svgTextLines(sx, sy, sub, { fill: '#1a1a2e', size: 11, maxCh: 15 });
+      });
+    }
+
+    out += '</svg>';
+    return out;
+  }
+
+  // ══════════════════════════════════════════════
+  // ── Moja šolska snov ──
+  // ══════════════════════════════════════════════
+
+  const SNOV_KEY = 'ucni_most_snov_v2';
+
+  const DEFAULT_PREDMETI_OS = {
+    "1": ["Slovenščina","Matematika","Spoznavanje okolja","Likovna umetnost","Glasbena umetnost","Šport"],
+    "2": ["Slovenščina","Matematika","Spoznavanje okolja","Angleščina","Likovna umetnost","Glasbena umetnost","Šport"],
+    "3": ["Slovenščina","Matematika","Spoznavanje okolja","Angleščina","Likovna umetnost","Glasbena umetnost","Šport"],
+    "4": ["Slovenščina","Matematika","Družba","Naravoslovje in tehnika","Angleščina","Likovna umetnost","Glasbena umetnost","Šport"],
+    "5": ["Slovenščina","Matematika","Družba","Naravoslovje in tehnika","Angleščina","Gospodinjstvo","Likovna umetnost","Glasbena umetnost","Šport"],
+    "6": ["Slovenščina","Matematika","Angleščina","Zgodovina","Geografija","Naravoslovje","Tehnika in tehnologija","Gospodinjstvo","Likovna umetnost","Glasbena umetnost","Šport"],
+    "7": ["Slovenščina","Matematika","Angleščina","Zgodovina","Geografija","Domovinska in državljanska kultura in etika","Naravoslovje","Tehnika in tehnologija","Likovna umetnost","Glasbena umetnost","Šport"],
+    "8": ["Slovenščina","Matematika","Angleščina","Zgodovina","Geografija","Domovinska in državljanska kultura in etika","Biologija","Kemija","Fizika","Likovna umetnost","Glasbena umetnost","Šport"],
+    "9": ["Slovenščina","Matematika","Angleščina","Zgodovina","Geografija","Biologija","Kemija","Fizika","Likovna umetnost","Glasbena umetnost","Šport"],
+  };
+
+  const DEFAULT_PREDMETI_SS = {
+    "1": ["Slovenščina","Matematika","Angleščina","Zgodovina","Športna vzgoja"],
+    "2": ["Slovenščina","Matematika","Angleščina","Zgodovina","Športna vzgoja"],
+    "3": ["Slovenščina","Matematika","Angleščina","Zgodovina","Športna vzgoja"],
+    "4": ["Slovenščina","Matematika","Angleščina","Zgodovina","Športna vzgoja"],
+  };
+
+  const PREDMET_IKONE = {
+    'Slovenščina':'📝','Matematika':'🔢','Spoznavanje okolja':'🌱',
+    'Angleščina':'🇬🇧','Likovna umetnost':'🎨','Glasbena umetnost':'🎵',
+    'Šport':'⚽','Naravoslovje in tehnika':'🔧','Naravoslovje':'🔬',
+    'Tehnika in tehnologija':'⚙️','Gospodinjstvo':'🏠','Družba':'🤝',
+    'Zgodovina':'🏛️','Geografija':'🌍',
+    'Domovinska in državljanska kultura in etika':'🏛️',
+    'Biologija':'🌿','Kemija':'⚗️','Fizika':'⚡','Športna vzgoja':'🏃',
+  };
+
+  let snovAktivnaSola      = null; // 'osnovna' | 'srednja'
+  let snovAktivniRazred    = null; // '1'..'9' ali '1'..'4'
+  let snovAktivniPredmetId = null;
+  let snovAktivnaTemaId    = null;
+
+  function getSnovData() {
+    try { return JSON.parse(localStorage.getItem(SNOV_KEY) || '{}'); }
+    catch { return {}; }
+  }
+  function setSnovData(data) { localStorage.setItem(SNOV_KEY, JSON.stringify(data)); }
+
+  function getSnovRazredData() {
+    const data = getSnovData();
+    if (!data[snovAktivnaSola]) data[snovAktivnaSola] = {};
+    if (!data[snovAktivnaSola][snovAktivniRazred]) {
+      const defaults = snovAktivnaSola === 'osnovna'
+        ? (DEFAULT_PREDMETI_OS[snovAktivniRazred] || [])
+        : (DEFAULT_PREDMETI_SS[snovAktivniRazred] || []);
+      const base = Date.now();
+      data[snovAktivnaSola][snovAktivniRazred] = {
+        predmeti: defaults.map((ime, i) => ({ id: base + i, ime, teme: [] }))
+      };
+      setSnovData(data);
+    }
+    return data;
+  }
+
+  function snovIkona(ime) { return PREDMET_IKONE[ime] || '📚'; }
+
+  // ── Izbira šole ──
+  function snovIzberiSolo(tip) {
+    snovAktivnaSola = tip;
+    showScreen('screen-snov-razredi');
+  }
+
+  // ── Razredi / Letniki ──
+  function renderSnovRazredi() {
+    const jeOs = snovAktivnaSola === 'osnovna';
+    document.getElementById('snovRazretiTitle').textContent =
+      jeOs ? '🏫 Osnovna šola – Izberi razred' : '🎓 Srednja šola – Izberi letnik';
+    const list = document.getElementById('snovRazrediList');
+    list.innerHTML = '';
+    const stevilo = jeOs ? 9 : 4;
+    for (let i = 1; i <= stevilo; i++) {
+      const el = document.createElement('div');
+      el.className = 'snov-item';
+      el.style.cursor = 'pointer';
+      const oznaka = jeOs ? `${i}. razred` : `${i}. letnik`;
+      el.innerHTML = `
+        <div class="snov-item-icon">${jeOs ? '🏫' : '🎓'}</div>
+        <div class="snov-item-info">
+          <div class="snov-item-name">${oznaka}</div>
+        </div>
+        <div style="color:var(--accent); font-weight:700; font-size:1.5rem; padding:0 4px;">›</div>`;
+      el.addEventListener('click', () => {
+        snovAktivniRazred = String(i);
+        showScreen('screen-snov-predmeti');
+      });
+      list.appendChild(el);
+    }
+  }
+
+  // ── Predmeti ──
+  function renderSnovPredmeti() {
+    const data   = getSnovRazredData();
+    const razred = data[snovAktivnaSola][snovAktivniRazred];
+    const jeOs   = snovAktivnaSola === 'osnovna';
+    const oznaka = jeOs ? `${snovAktivniRazred}. razred` : `${snovAktivniRazred}. letnik`;
+    document.getElementById('snovPredmetiTitle').textContent = `📚 ${oznaka} – Predmeti`;
+    document.getElementById('snovPredmetiBreadcrumb').innerHTML =
+      `<span>${jeOs ? 'Osnovna šola' : 'Srednja šola'}</span> › <span>${oznaka}</span>`;
+    const list = document.getElementById('snovPredmetiList');
+    list.innerHTML = '';
+    if (!razred.predmeti.length) {
+      list.innerHTML = '<p class="snov-empty">Ni predmetov. Dodajte prvega!</p>';
+      return;
+    }
+    razred.predmeti.forEach(p => {
+      const el = document.createElement('div');
+      el.className = 'snov-item';
+      const tc = p.teme ? p.teme.length : 0;
+      const temeTxt = tc === 1 ? 'tema' : tc >= 2 && tc <= 4 ? 'teme' : 'tem';
+      el.innerHTML = `
+        <div class="snov-item-icon">${snovIkona(p.ime)}</div>
+        <div class="snov-item-info" style="cursor:pointer;" data-id="${p.id}">
+          <div class="snov-item-name">${escHtml(p.ime)}</div>
+          <div class="snov-item-meta">${tc} ${temeTxt}</div>
+        </div>
+        <div class="snov-item-actions">
+          <button class="icon-btn rename" data-id="${p.id}">Preimenuj</button>
+          <button class="icon-btn del" data-id="${p.id}">Izbriši</button>
+        </div>`;
+      el.querySelector('.snov-item-info').addEventListener('click', function() {
+        snovAktivniPredmetId = parseInt(this.dataset.id);
+        showScreen('screen-snov-teme');
+      });
+      el.querySelector('.icon-btn.rename').addEventListener('click', function(e) {
+        e.stopPropagation(); snovPreimenujPredmet(parseInt(this.dataset.id));
+      });
+      el.querySelector('.icon-btn.del').addEventListener('click', function(e) {
+        e.stopPropagation(); snovIzbrisiPredmet(parseInt(this.dataset.id));
+      });
+      list.appendChild(el);
+    });
+  }
+
+  function snovDodajPredmet() {
+    const ime = prompt('Vnesite ime novega predmeta:');
+    if (!ime || !ime.trim()) return;
+    const data = getSnovData();
+    data[snovAktivnaSola][snovAktivniRazred].predmeti.push({ id: Date.now(), ime: ime.trim(), teme: [] });
+    setSnovData(data);
+    renderSnovPredmeti();
+  }
+
+  function snovPreimenujPredmet(id) {
+    const data = getSnovData();
+    const p = data[snovAktivnaSola][snovAktivniRazred].predmeti.find(x => x.id === id);
+    if (!p) return;
+    const novoIme = prompt('Novo ime predmeta:', p.ime);
+    if (!novoIme || !novoIme.trim()) return;
+    p.ime = novoIme.trim();
+    setSnovData(data);
+    renderSnovPredmeti();
+  }
+
+  function snovIzbrisiPredmet(id) {
+    if (!confirm('Ali res želite izbrisati ta predmet in vse teme ter besedila v njem?')) return;
+    const data = getSnovData();
+    data[snovAktivnaSola][snovAktivniRazred].predmeti =
+      data[snovAktivnaSola][snovAktivniRazred].predmeti.filter(x => x.id !== id);
+    setSnovData(data);
+    renderSnovPredmeti();
+  }
+
+  // ── Teme ──
+  function _snovGetPredmet(data) {
+    const razred = (data[snovAktivnaSola] || {})[snovAktivniRazred] || { predmeti: [] };
+    return razred.predmeti.find(p => p.id === snovAktivniPredmetId) || null;
+  }
+
+  function renderSnovTeme() {
+    const data    = getSnovData();
+    const predmet = _snovGetPredmet(data);
+    if (!predmet) return;
+    const jeOs   = snovAktivnaSola === 'osnovna';
+    const oznaka = jeOs ? `${snovAktivniRazred}. razred` : `${snovAktivniRazred}. letnik`;
+    document.getElementById('snovTemePanelTitle').textContent = '📂 ' + predmet.ime + ' – Teme';
+    document.getElementById('snovTemeBreadcrumb').innerHTML =
+      `<span>${jeOs ? 'Osnovna šola' : 'Srednja šola'}</span> › <span>${oznaka}</span> › <span>${escHtml(predmet.ime)}</span>`;
+    const list = document.getElementById('snovTemeList');
+    list.innerHTML = '';
+    const teme = predmet.teme || [];
+    if (!teme.length) {
+      list.innerHTML = '<p class="snov-empty">Ni tem. Dodajte prvo temo!</p>';
+      return;
+    }
+    teme.forEach(t => {
+      const el = document.createElement('div');
+      el.className = 'snov-item';
+      const bc = t.besedila ? t.besedila.length : 0;
+      el.innerHTML = `
+        <div class="snov-item-icon">📂</div>
+        <div class="snov-item-info" style="cursor:pointer;" data-id="${t.id}">
+          <div class="snov-item-name">${escHtml(t.ime)}</div>
+          <div class="snov-item-meta">${bc} ${bc === 1 ? 'besedilo' : 'besedil'}</div>
+        </div>
+        <div class="snov-item-actions">
+          <button class="icon-btn rename" data-id="${t.id}">Preimenuj</button>
+          <button class="icon-btn del" data-id="${t.id}">Izbriši</button>
+        </div>`;
+      el.querySelector('.snov-item-info').addEventListener('click', function() {
+        snovAktivnaTemaId = parseInt(this.dataset.id);
+        showScreen('screen-snov-besedila');
+      });
+      el.querySelector('.icon-btn.rename').addEventListener('click', function(e) {
+        e.stopPropagation(); snovPreimenujTemo(parseInt(this.dataset.id));
+      });
+      el.querySelector('.icon-btn.del').addEventListener('click', function(e) {
+        e.stopPropagation(); snovIzbrisiTemo(parseInt(this.dataset.id));
+      });
+      list.appendChild(el);
+    });
+  }
+
+  function snovDodajTemo() {
+    const ime = prompt('Vnesite ime nove teme (npr. Rimljani, Fotosinteza …):');
+    if (!ime || !ime.trim()) return;
+    const data    = getSnovData();
+    const predmet = _snovGetPredmet(data);
+    if (!predmet) return;
+    if (!predmet.teme) predmet.teme = [];
+    predmet.teme.push({ id: Date.now(), ime: ime.trim(), besedila: [] });
+    setSnovData(data);
+    renderSnovTeme();
+  }
+
+  function snovPreimenujTemo(id) {
+    const data    = getSnovData();
+    const predmet = _snovGetPredmet(data);
+    if (!predmet) return;
+    const t = predmet.teme.find(x => x.id === id);
+    if (!t) return;
+    const novoIme = prompt('Novo ime teme:', t.ime);
+    if (!novoIme || !novoIme.trim()) return;
+    t.ime = novoIme.trim();
+    setSnovData(data);
+    renderSnovTeme();
+  }
+
+  function snovIzbrisiTemo(id) {
+    if (!confirm('Ali res želite izbrisati to temo in vsa besedila v njej?')) return;
+    const data    = getSnovData();
+    const predmet = _snovGetPredmet(data);
+    if (!predmet) return;
+    predmet.teme = predmet.teme.filter(x => x.id !== id);
+    setSnovData(data);
+    renderSnovTeme();
+  }
+
+  // ── Besedila ──
+  function _snovGetTema(data) {
+    const predmet = _snovGetPredmet(data);
+    if (!predmet) return null;
+    return predmet.teme.find(t => t.id === snovAktivnaTemaId) || null;
+  }
+
+  function renderSnovBesedila() {
+    const data    = getSnovData();
+    const predmet = _snovGetPredmet(data);
+    if (!predmet) return;
+    const tema = _snovGetTema(data);
+    if (!tema) return;
+    const jeOs   = snovAktivnaSola === 'osnovna';
+    const oznaka = jeOs ? `${snovAktivniRazred}. razred` : `${snovAktivniRazred}. letnik`;
+    document.getElementById('snovBesedilaPanelTitle').textContent = '📄 ' + tema.ime;
+    document.getElementById('snovBesedilaBreadcrumb').innerHTML =
+      `<span>${jeOs ? 'Osnovna šola' : 'Srednja šola'}</span> › <span>${oznaka}</span> › <span>${escHtml(predmet.ime)}</span> › <span>${escHtml(tema.ime)}</span>`;
+    snovToggleVnosBesedila(false);
+    const list = document.getElementById('snovBesedilaList');
+    list.innerHTML = '';
+    const besedila = tema.besedila || [];
+    if (!besedila.length) {
+      list.innerHTML = '<p class="snov-empty">Ni besedil. Dodajte prvo!</p>';
+      return;
+    }
+    besedila.forEach(b => {
+      const el = document.createElement('div');
+      el.className = 'snov-item';
+      el.innerHTML = `
+        <div class="snov-item-icon">📃</div>
+        <div class="snov-item-info">
+          <div class="snov-item-name">${escHtml(b.naslov || b.vsebina.slice(0,50))}</div>
+          <div class="snov-item-meta">${b.datum} · ${b.vsebina.length} znakov</div>
+        </div>
+        <div class="snov-item-actions">
+          <button class="icon-btn open" data-id="${b.id}">Odpri</button>
+          <button class="icon-btn rename" data-id="${b.id}">Preimenuj</button>
+          <button class="icon-btn del" data-id="${b.id}">Izbriši</button>
+        </div>`;
+      el.querySelector('.icon-btn.open').addEventListener('click', function() {
+        const item = snovGetBesedilo(parseInt(this.dataset.id));
+        if (item) { setReaderText(item.vsebina); showScreen('screen-reader'); }
+      });
+      el.querySelector('.icon-btn.rename').addEventListener('click', function() {
+        snovPreimenujBesedilo(parseInt(this.dataset.id));
+      });
+      el.querySelector('.icon-btn.del').addEventListener('click', function() {
+        snovIzbrisiB(parseInt(this.dataset.id));
+      });
+      list.appendChild(el);
+    });
+  }
+
+  function snovGetBesedilo(id) {
+    const data = getSnovData();
+    const tema = _snovGetTema(data);
+    if (!tema) return null;
+    return tema.besedila.find(b => b.id === id) || null;
+  }
+
+  function snovToggleVnosBesedila(show) {
+    document.getElementById('snovVnosWrap').style.display = show ? 'block' : 'none';
+    if (show) {
+      document.getElementById('snovBesediloNaslov').value = '';
+      document.getElementById('snovBesediloVsebina').value = '';
+      document.getElementById('snovBesediloNaslov').focus();
+    }
+  }
+
+  function snovShraniBesedilo() {
+    const naslov  = document.getElementById('snovBesediloNaslov').value.trim();
+    const vsebina = document.getElementById('snovBesediloVsebina').value.trim();
+    if (!vsebina) { alert('Besedilo ne sme biti prazno.'); return; }
+    const data = getSnovData();
+    const tema = _snovGetTema(data);
+    if (!tema) return;
+    if (!tema.besedila) tema.besedila = [];
+    tema.besedila.unshift({
+      id: Date.now(),
+      naslov: naslov || vsebina.slice(0, 50),
+      vsebina,
+      datum: new Date().toLocaleDateString('sl-SI'),
+    });
+    setSnovData(data);
+    snovToggleVnosBesedila(false);
+    renderSnovBesedila();
+  }
+
+  function snovPreimenujBesedilo(id) {
+    const data = getSnovData();
+    const tema = _snovGetTema(data);
+    if (!tema) return;
+    const b = tema.besedila.find(x => x.id === id);
+    if (!b) return;
+    const novoIme = prompt('Nov naslov besedila:', b.naslov);
+    if (!novoIme || !novoIme.trim()) return;
+    b.naslov = novoIme.trim();
+    setSnovData(data);
+    renderSnovBesedila();
+  }
+
+  function snovIzbrisiB(id) {
+    if (!confirm('Ali res želite izbrisati to besedilo?')) return;
+    const data = getSnovData();
+    const tema = _snovGetTema(data);
+    if (!tema) return;
+    tema.besedila = tema.besedila.filter(x => x.id !== id);
+    setSnovData(data);
+    renderSnovBesedila();
+  }
+
+  // ══════════════════════════════════════════════
+  // ── Slikaj stran ──
+  // ══════════════════════════════════════════════
+
+  function handleSlikajFile(event) {
+    const file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+
+    // Skrij prejšnje rezultate/napake
+    document.getElementById('slikajResultWrap').style.display = 'none';
+    document.getElementById('slikajError').classList.remove('visible');
+    document.getElementById('slikajError').textContent = '';
+    ssZapri();
+
+    // Pretvori v base64
+    const reader = new FileReader();
+    reader.onload = async function (e) {
+      const dataUrl = e.target.result;
+      // dataUrl = "data:image/jpeg;base64,XXXX..."
+      const comma = dataUrl.indexOf(',');
+      const base64 = dataUrl.substring(comma + 1);
+      const mediaType = file.type || 'image/jpeg';
+
+      document.getElementById('slikajLoading').classList.add('visible');
+
+      try {
+        const resp = await fetch(SUPABASE_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({ slika: base64, mediaType }),
+        });
+
+        if (!resp.ok) {
+          const txt = await resp.text().catch(() => '');
+          throw new Error('Strežnik je vrnil napako ' + resp.status + (txt ? ': ' + txt : ''));
+        }
+
+        const data = await resp.json();
+
+        let rezultat = data.rezultat || data.result || data.odgovor || '';
+        if (!rezultat) {
+          const raw = data.text || data.content || '';
+          if (Array.isArray(raw)) {
+            rezultat = raw.filter(b => b.type === 'text').map(b => b.text).join('\n');
+          } else {
+            rezultat = raw;
+          }
+        }
+        if (!rezultat) throw new Error('Strežnik ni vrnil besedila.');
+
+        document.getElementById('slikajBesedilo').value = rezultat;
+        document.getElementById('slikajResultWrap').style.display = 'block';
+      } catch (err) {
+        const errEl = document.getElementById('slikajError');
+        errEl.textContent = 'Napaka pri branju slike: ' + err.message;
+        errEl.classList.add('visible');
+      } finally {
+        document.getElementById('slikajLoading').classList.remove('visible');
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function slikajOdpriVBralniku() {
+    const txt = document.getElementById('slikajBesedilo').value.trim();
+    if (!txt) return;
+    setReaderText(txt);
+    showScreen('screen-reader');
+  }
+
+  function slikajPokaziSnovDialog() {
+    const txt = document.getElementById('slikajBesedilo').value.trim();
+    if (!txt) { alert('Najprej preberi besedilo s slike.'); return; }
+    document.getElementById('slikajSnovDialog').style.display = 'block';
+    ssPokaziKorak(1);
+  }
+
+  function ssZapri() {
+    document.getElementById('slikajSnovDialog').style.display = 'none';
+    _ssReset();
+  }
+
+  // ── Stanje za SS (shrani-v-snov) dialog ──
+  let _ssSola = null, _ssRazred = null, _ssPredmetId = null, _ssTemaId = null;
+
+  function _ssReset() {
+    _ssSola = null; _ssRazred = null; _ssPredmetId = null; _ssTemaId = null;
+    [1,2,3,4,5].forEach(n => document.getElementById('ssStep'+n).style.display = 'none');
+  }
+
+  function ssPokaziKorak(n) {
+    [1,2,3,4,5].forEach(i => document.getElementById('ssStep'+i).style.display = 'none');
+    document.getElementById('ssStep'+n).style.display = 'block';
+  }
+
+  function ssIzberiSolo(tip) {
+    _ssSola = tip;
+    const jeOs = tip === 'osnovna';
+    document.getElementById('ssBreadcrumb2').innerHTML =
+      '<span>' + (jeOs ? 'Osnovna šola' : 'Srednja šola') + '</span>';
+    const list = document.getElementById('ssRazredList');
+    list.innerHTML = '';
+    const stevilo = jeOs ? 9 : 4;
+    for (let i = 1; i <= stevilo; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'snov-select-btn';
+      btn.innerHTML = (jeOs ? '🏫' : '🎓') + ' &nbsp;' + i + (jeOs ? '. razred' : '. letnik');
+      btn.dataset.r = i;
+      btn.addEventListener('click', function() { ssIzberiRazred(this.dataset.r); });
+      list.appendChild(btn);
+    }
+    ssPokaziKorak(2);
+  }
+
+  function ssIzberiRazred(r) {
+    _ssRazred = String(r);
+    const jeOs = _ssSola === 'osnovna';
+    const oznaka = r + (jeOs ? '. razred' : '. letnik');
+    // Zagotovi, da podatki obstajajo (klic getSnovRazredData zahteva globalne spremenljivke)
+    const prevSola = snovAktivnaSola, prevRazred = snovAktivniRazred;
+    snovAktivnaSola = _ssSola; snovAktivniRazred = _ssRazred;
+    getSnovRazredData();
+    snovAktivnaSola = prevSola; snovAktivniRazred = prevRazred;
+
+    const data = getSnovData();
+    const razred = data[_ssSola][_ssRazred];
+    document.getElementById('ssBreadcrumb3').innerHTML =
+      '<span>' + (jeOs ? 'Osnovna šola' : 'Srednja šola') + '</span> › <span>' + oznaka + '</span>';
+    const list = document.getElementById('ssPredmetList');
+    list.innerHTML = '';
+    (razred.predmeti || []).forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'snov-select-btn';
+      btn.innerHTML = snovIkona(p.ime) + ' &nbsp;' + escHtml(p.ime);
+      btn.dataset.id = p.id;
+      btn.addEventListener('click', function() { ssIzberiPredmet(parseInt(this.dataset.id)); });
+      list.appendChild(btn);
+    });
+    ssPokaziKorak(3);
+  }
+
+  function ssIzberiPredmet(id) {
+    _ssPredmetId = id;
+    const data = getSnovData();
+    const razred = data[_ssSola][_ssRazred];
+    const predmet = (razred.predmeti || []).find(p => p.id === id);
+    if (!predmet) return;
+    const jeOs = _ssSola === 'osnovna';
+    const oznaka = _ssRazred + (jeOs ? '. razred' : '. letnik');
+    document.getElementById('ssBreadcrumb4').innerHTML =
+      '<span>' + (jeOs ? 'Osnovna šola' : 'Srednja šola') + '</span> › <span>' + oznaka + '</span> › <span>' + escHtml(predmet.ime) + '</span>';
+    const list = document.getElementById('ssTemaList');
+    list.innerHTML = '';
+    const teme = predmet.teme || [];
+    if (!teme.length) {
+      list.innerHTML = '<p style="color:#888;font-size:.95rem;">Ni tem. Ustvari novo spodaj.</p>';
+    }
+    teme.forEach(t => {
+      const btn = document.createElement('button');
+      btn.className = 'snov-select-btn';
+      btn.innerHTML = '📂 &nbsp;' + escHtml(t.ime);
+      btn.dataset.id = t.id;
+      btn.addEventListener('click', function() { ssIzberiTemo(parseInt(this.dataset.id)); });
+      list.appendChild(btn);
+    });
+    ssPokaziKorak(4);
+  }
+
+  function ssNovaTema() {
+    const ime = prompt('Ime nove teme (npr. Rimljani, Fotosinteza …):');
+    if (!ime || !ime.trim()) return;
+    const data = getSnovData();
+    const predmet = (data[_ssSola][_ssRazred].predmeti || []).find(p => p.id === _ssPredmetId);
+    if (!predmet) return;
+    if (!predmet.teme) predmet.teme = [];
+    const novaId = Date.now();
+    predmet.teme.push({ id: novaId, ime: ime.trim(), besedila: [] });
+    setSnovData(data);
+    ssIzberiTemo(novaId);
+  }
+
+  function ssIzberiTemo(id) {
+    _ssTemaId = id;
+    const data = getSnovData();
+    const predmet = (data[_ssSola][_ssRazred].predmeti || []).find(p => p.id === _ssPredmetId);
+    const tema = (predmet && predmet.teme || []).find(t => t.id === id);
+    if (!tema) return;
+    const jeOs = _ssSola === 'osnovna';
+    const oznaka = _ssRazred + (jeOs ? '. razred' : '. letnik');
+    document.getElementById('ssBreadcrumb5').innerHTML =
+      '<span>' + (jeOs ? 'Osnovna šola' : 'Srednja šola') + '</span> › <span>' + oznaka + '</span> › <span>' + escHtml(predmet.ime) + '</span> › <span>' + escHtml(tema.ime) + '</span>';
+    document.getElementById('ssNaslovInput').value = '';
+    ssPokaziKorak(5);
+    document.getElementById('ssNaslovInput').focus();
+  }
+
+  function ssShrani() {
+    const vsebina = document.getElementById('slikajBesedilo').value.trim();
+    if (!vsebina) { alert('Besedilo je prazno.'); return; }
+    const naslov = document.getElementById('ssNaslovInput').value.trim() || vsebina.slice(0, 50);
+    const data = getSnovData();
+    const predmet = (data[_ssSola][_ssRazred].predmeti || []).find(p => p.id === _ssPredmetId);
+    const tema = (predmet && predmet.teme || []).find(t => t.id === _ssTemaId);
+    if (!tema) { alert('Napaka: tema ni bila najdena.'); return; }
+    if (!tema.besedila) tema.besedila = [];
+    tema.besedila.unshift({
+      id: Date.now(),
+      naslov,
+      vsebina,
+      datum: new Date().toLocaleDateString('sl-SI'),
+    });
+    setSnovData(data);
+    ssZapri();
+    alert('Besedilo je shranjeno v šolsko snov! ✅');
+  }
+
+  // ══════════════════════════════════════════════
+  // ── Fokus način (bralno ravnilo) ──
+  // ══════════════════════════════════════════════
+
+  function razdelNaPovedi(block) {
+    // Razdeli besedilo na povedi po točki/klicaju/vprašaju/wielokropku
+    try {
+      return block.split(/(?<=[.!?…]+)\s+/).map(s => s.trim()).filter(Boolean);
+    } catch (_) {
+      return [block];
+    }
+  }
+
+  function _fokusReset() {
+    if (!fokusAktiven) return;
+    fokusAktiven = false;
+    fokusPovedi  = [];
+    const box = document.getElementById('readerBox');
+    if (box) box.classList.remove('fokus-aktiven');
+    const bar = document.getElementById('fokusNavBar');
+    if (bar) bar.classList.remove('aktiven');
+    document.body.style.paddingBottom = '';
+    _updateFokusBtn();
+  }
+
+  function toggleFokus() {
+    if (fokusAktiven) {
+      deaktivirajFokus();
+    } else {
+      aktivirajFokus();
+    }
+  }
+
+  function aktivirajFokus() {
+    if (!_readerPlainText) { alert('V bralniku ni besedila.'); return; }
+    stopTTS();
+    fokusAktiven = true;
+    fokusIndeks  = 0;
+    _renderFokusBox();
+    _updateFokusBtn();
+    document.getElementById('fokusNavBar').classList.add('aktiven');
+    document.body.style.paddingBottom = '80px';
+  }
+
+  function deaktivirajFokus() {
+    _fokusReset();
+    renderReader();   // ponovni izris običajnega načina (upošteva zloge)
+  }
+
+  // Doda poved (eno ali več) kot klikljive fokus-spane; če so zlogi vklopljeni,
+  // se besedilo izriše z barvnimi zlogi. Vrne posodobljen globalni indeks.
+  function _fokusDodajPovedi(box, cleanText, useZlogi, globalIdx) {
+    const p = document.createElement('p');
+    const povedi = razdelNaPovedi(cleanText);
+    povedi.forEach((s, si) => {
+      const span = document.createElement('span');
+      span.className = 'fokus-poved';
+      if (useZlogi) _appendZlogiText(span, s);
+      else span.appendChild(document.createTextNode(s));
+      if (si < povedi.length - 1) span.appendChild(document.createTextNode(' '));
+      const idx = globalIdx++;
+      span.dataset.idx = idx;
+      span.addEventListener('click', () => { fokusIndeks = idx; _posodobiAktivno(); });
+      p.appendChild(span);
+      fokusPovedi.push(span);
+    });
+    box.appendChild(p);
+    return globalIdx;
+  }
+
+  function _renderFokusBox() {
+    const box = document.getElementById('readerBox');
+    box.innerHTML = '';
+    fokusPovedi = [];
+    let globalIdx = 0;
+
+    // Vir: če so zlogi vklopljeni, uporabi z | označeno besedilo (znak | je
+    // znotraj besed, zato ne moti delitve na povedi). Sicer čisto besedilo.
+    const useZlogi = _zlogiAktiven && !!_zlogiAnnotated;
+    const source = useZlogi ? _zlogiAnnotated : _readerPlainText;
+
+    const blocks = source.split(/\n\n+/).map(b => b.trim()).filter(Boolean);
+    blocks.forEach(block => {
+      const lines = block.split(/\n/).map(l => l.trim()).filter(Boolean);
+      if (!lines.length) return;
+
+      // Horizontal rule → skip in focus mode
+      if (lines.length === 1 && /^---+$/.test(lines[0])) return;
+
+      // Heading block
+      const hm = _matchHeading(lines[0]);
+      if (hm) {
+        const h = document.createElement('p'); h.className = hm.cls;
+        const naslov = _stripMarkdown(hm.txt);
+        if (useZlogi) _appendZlogiText(h, naslov);
+        else h.textContent = naslov;
+        box.appendChild(h);
+        // Render remaining lines as paragraph if any
+        const rest = lines.slice(1).join(' ');
+        if (rest.trim()) {
+          globalIdx = _fokusDodajPovedi(box, _stripMarkdown(rest), useZlogi, globalIdx);
+        }
+        return;
+      }
+
+      // List → render as paragraph-like with sentence spans on clean text
+      const cleanBlock = _stripMarkdown(lines.join(' '));
+      globalIdx = _fokusDodajPovedi(box, cleanBlock, useZlogi, globalIdx);
+    });
+
+    box.classList.add('fokus-aktiven');
+    applyColor();
+    _posodobiAktivno();
+  }
+
+  function _posodobiAktivno() {
+    fokusPovedi.forEach((s, i) => s.classList.toggle('aktivna', i === fokusIndeks));
+    const aktiven = fokusPovedi[fokusIndeks];
+    if (aktiven) aktiven.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('fokusNavStev').textContent =
+      fokusPovedi.length ? (fokusIndeks + 1) + ' / ' + fokusPovedi.length : '';
+    document.getElementById('fokusNavNazaj').disabled = fokusIndeks === 0;
+    document.getElementById('fokusNavNaprej').disabled = fokusIndeks >= fokusPovedi.length - 1;
+  }
+
+  function fokusNaprej() {
+    if (!fokusAktiven || fokusIndeks >= fokusPovedi.length - 1) return;
+    fokusIndeks++;
+    _posodobiAktivno();
+  }
+
+  function fokusNazaj() {
+    if (!fokusAktiven || fokusIndeks <= 0) return;
+    fokusIndeks--;
+    _posodobiAktivno();
+  }
+
+  function _updateFokusBtn() {
+    const btn = document.getElementById('btnFokus');
+    if (!btn) return;
+    if (fokusAktiven) {
+      btn.textContent = '🔍 Fokus: VKL';
+      btn.style.cssText = 'margin-bottom:0; background:var(--accent); color:#fff; border-color:var(--accent);';
+    } else {
+      btn.textContent = '🔍 Fokus';
+      btn.style.cssText = 'margin-bottom:0;';
+    }
+  }
+
+  // Tipkovnica: puščici gor/dol, Esc
+  document.addEventListener('keydown', function (e) {
+    if (!fokusAktiven) return;
+    if (!document.getElementById('screen-reader').classList.contains('active')) return;
+    if (e.key === 'ArrowDown')  { e.preventDefault(); fokusNaprej(); }
+    if (e.key === 'ArrowUp')    { e.preventDefault(); fokusNazaj(); }
+    if (e.key === 'Escape')     { deaktivirajFokus(); }
+  });
+
+  // ── Demo besedilo ──
+  const DEMO_TEXT = `Potovanje v deželo čudes
+
+Nekoč je živela deklica po imenu Zara, ki je imela rdeče kodraste lase in zelene oči, polne radovednosti. Vsako jutro je tekla k veliki hrastovi drevesu na robu vasi in tam sedela ter opazovala svet okrog sebe.
+
+Nekega dne je opazila majhna vrata v deblu drevesa. Bila so lesena, okrašena z zvezdicami in lunami. Zara je previdno potrkala – enkrat, dvakrat, trikrat. Vrata so se počasi odprla in pred njo se je razprostrl svetleč hodnik, obložen s tisoč drobnimi lučkami.
+
+Na koncu hodnika je stal lisičji gospod v zelenem klobuku. »Dobrodošla,« je rekel z mehkim glasom. »Tukaj je dežela čudes. Vsak, ki pride sem, prinese s seboj posebno darilo – svojo domišljijo.«
+
+Zara je vzela globok dih in naredila prvi korak. Pod njeno nogo je zazvenel zvonček, nebo nad njo pa se je posulo z zlatimi zvezdami, čeprav je bil sredi dneva.
+
+»Kakšno darilo imam jaz?« je vprašala. Lisičji gospod se je nasmehnil in pokazal na njeno srce. »Imeti radovedno srce je največje darilo od vseh.«`;
+
+  // Inicializacija ob nalaganju
+  document.addEventListener('DOMContentLoaded', function () {
+    setReaderText(DEMO_TEXT);
+  });
+</script>
+</body>
+</html>
