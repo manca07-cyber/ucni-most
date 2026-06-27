@@ -2268,13 +2268,22 @@
 
   function _renderMarkdownToBox(txt, box) {
     box.innerHTML = '';
+    txt = _stripCodeFences(txt);
     const blocks = txt.split(/\n\n+/).map(b => b.trim()).filter(Boolean);
     blocks.forEach(block => _renderMarkdownBlock(block, box));
   }
 
+  // Odstrani tri ali več zaporednih krativcev (```), vključno z morebitno
+  // oznako jezika takoj za njimi (npr. ```json). Vsebina med njimi ostane.
+  // Velja kjerkoli v besedilu (začetek/sredina/konec) in v vseh načinih obdelave.
+  function _stripCodeFences(txt) {
+    if (txt == null) return txt;
+    return String(txt).replace(/`{3,}[A-Za-z0-9_+\-]*[ \t]*\n?/g, '');
+  }
+
   // Strip markdown markers for TTS (no #, **, *, _, ---)
   function _stripMarkdown(txt) {
-    return txt
+    return _stripCodeFences(txt)
       .replace(/^#{1,3} /gm, '')
       .replace(/\*\*([^*]+)\*\*/g, '$1')
       .replace(/\*([^*]+)\*/g, '$1')
@@ -4410,7 +4419,13 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
         _fokusBuildUtterance += ' ';
       }
       span.dataset.idx = idx;
-      span.addEventListener('click', () => { fokusIndeks = idx; _posodobiAktivno(); });
+      span.addEventListener('click', () => {
+        // Med predvajanjem branja na glas ima prednost samodejno sledenje,
+        // zato ročnega dotika povedi takrat ne upoštevamo.
+        if (ttsState === 'playing' || ttsState === 'loading') return;
+        fokusIndeks = idx;
+        _posodobiAktivno();
+      });
       p.appendChild(span);
       fokusPovedi.push(span);
     });
@@ -4434,8 +4449,10 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
 
     // Vir: če so zlogi vklopljeni, uporabi z | označeno besedilo (znak | je
     // znotraj besed, zato ne moti delitve na povedi). Sicer čisto besedilo.
+    // Pred delitvijo na bloke odstranimo morebitne trojne krativce (```), da
+    // ne pridejo niti v prikaz niti v utterance za branje na glas.
     const useZlogi = _zlogiAktiven && !!_zlogiAnnotated;
-    const source = useZlogi ? _zlogiAnnotated : _readerPlainText;
+    const source = _stripCodeFences(useZlogi ? _zlogiAnnotated : _readerPlainText);
 
     const blocks = source.split(/\n\n+/).map(b => b.trim()).filter(Boolean);
     blocks.forEach(block => {
@@ -4486,7 +4503,9 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
   function _posodobiAktivno() {
     fokusPovedi.forEach((s, i) => s.classList.toggle('aktivna', i === fokusIndeks));
     const aktiven = fokusPovedi[fokusIndeks];
-    if (aktiven) aktiven.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Nežno pomakni v vidno polje samo, kadar je to potrebno (brez utripanja,
+    // brez nepotrebnih skokov, ko je poved že vidna).
+    if (aktiven) aktiven.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     document.getElementById('fokusNavStev').textContent =
       fokusPovedi.length ? (fokusIndeks + 1) + ' / ' + fokusPovedi.length : '';
     document.getElementById('fokusNavNazaj').disabled = fokusIndeks === 0;
@@ -4517,13 +4536,21 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     }
   }
 
-  // Tipkovnica: puščici gor/dol, Esc
+  // Tipkovnica: puščica navzgor → prejšnja poved, navzdol → naslednja,
+  // Esc → izklop fokus načina. Tipke delujejo samo, kadar je fokus način
+  // vklopljen, in NE motijo tipkanja v poljih za vnos (input, textarea,
+  // contentEditable). Med predvajanjem branja na glas ima prednost samodejno
+  // sledenje, zato takrat puščice ne premikajo fokusa ročno (Esc deluje vedno).
   document.addEventListener('keydown', function (e) {
     if (!fokusAktiven) return;
     if (!document.getElementById('screen-reader').classList.contains('active')) return;
-    if (e.key === 'ArrowDown')  { e.preventDefault(); fokusNaprej(); }
-    if (e.key === 'ArrowUp')    { e.preventDefault(); fokusNazaj(); }
-    if (e.key === 'Escape')     { deaktivirajFokus(); }
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    if (e.key === 'Escape') { e.preventDefault(); deaktivirajFokus(); return; }
+    const predvaja = (ttsState === 'playing' || ttsState === 'loading');
+    if (predvaja) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); fokusNaprej(); }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); fokusNazaj(); }
   });
 
   // ══════════════════════════════════════════════
