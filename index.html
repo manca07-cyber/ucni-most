@@ -506,18 +506,22 @@
       cursor: default;
     }
 
-    /* ── TTS word highlight ── */
+    /* ── TTS word highlight ──
+       Barva poudarka se samodejno prilagodi izbrani barvi strani
+       (CSS spremenljivki --tts-hl-bg / --tts-hl-text nastavi applyColor()).
+       Uporabljamo box-shadow namesto padding-a, da poudarek ne zamakne
+       besedila in se postavitev na telefonu ne pokvari. */
+    :root {
+      --tts-hl-bg: #ffc89a;
+      --tts-hl-text: #3a1d00;
+    }
     .tts-word { display: inline; }
     .tts-word.tts-active {
-      background: #ffe066;
-      border-radius: 3px;
-      color: #1a1a1a !important;
-      box-shadow: 0 0 0 2px #ffe066;
-      transition: background .1s;
-    }
-    body.dark-theme .tts-word.tts-active {
-      background: #f0c400;
-      box-shadow: 0 0 0 2px #f0c400;
+      background-color: var(--tts-hl-bg);
+      color: var(--tts-hl-text) !important;
+      border-radius: 5px;
+      box-shadow: 0 0 0 3px var(--tts-hl-bg);
+      transition: background-color .15s ease, box-shadow .15s ease, color .15s ease;
     }
 
     /* ── Text area ── */
@@ -1724,6 +1728,20 @@
     gray: '#1a1a1a', dark: '#e8e8f0',
   };
 
+  // Mehki, dobro vidni poudarki za sledenje besede – izogibamo se ostremu
+  // rumenemu; barve so izbrane tako, da kontrastirajo s podlago (npr. peach na
+  // rumeni bi se zlil, zato tam svetla modra; na roza pa mehka mint zelena).
+  const HIGHLIGHT_COLORS = {
+    white:  { bg: '#ffc89a', text: '#3a1d00' },
+    cream:  { bg: '#bcd9f1', text: '#0a2a45' },
+    lblue:  { bg: '#ffc99c', text: '#3a1d00' },
+    yellow: { bg: '#a8d4ee', text: '#0a2a45' },
+    green:  { bg: '#ffc1a8', text: '#3a1d00' },
+    pink:   { bg: '#a9e0c4', text: '#0a3a1f' },
+    gray:   { bg: '#ffc89a', text: '#3a1d00' },
+    dark:   { bg: '#e6b85a', text: '#1a1a2e' },
+  };
+
   let state = { color: 'white', intensity: 'medium' };
 
   // ── Font ──
@@ -1758,6 +1776,10 @@
     box.style.color = fg;
     box.style.borderColor = state.color === 'dark' ? '#444' : '#ddd';
     document.body.classList.toggle('dark-theme', state.color === 'dark');
+
+    const hl = HIGHLIGHT_COLORS[state.color] || HIGHLIGHT_COLORS.white;
+    document.body.style.setProperty('--tts-hl-bg', hl.bg);
+    document.body.style.setProperty('--tts-hl-text', hl.text);
   }
 
   document.getElementById('colorRow').querySelectorAll('.color-btn').forEach(btn => {
