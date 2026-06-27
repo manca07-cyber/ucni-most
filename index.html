@@ -1327,6 +1327,193 @@
       color: #f1948a;
     }
 
+    /* ── Označi kot prebrano (v bralniku) ── */
+    .prebrano-wrap {
+      margin-bottom: 16px;
+    }
+    .prebrano-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 22px;
+      border-radius: 30px;
+      border: 2px solid var(--accent);
+      background: var(--panel);
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, color .2s, border-color .2s, transform .12s;
+      max-width: 100%;
+      word-break: break-word;
+    }
+    .prebrano-btn:hover { transform: translateY(-1px); }
+    .prebrano-btn .prebrano-kljukica {
+      font-size: 1.2rem;
+      line-height: 1;
+    }
+    .prebrano-btn.je-prebrano {
+      background: #2e7d32;
+      color: #fff;
+      border-color: #2e7d32;
+    }
+    body.dark-theme .prebrano-btn.je-prebrano {
+      background: #43a047;
+      border-color: #43a047;
+      color: #fff;
+    }
+
+    /* ── Diskreten check v Moja šolska snov ── */
+    .snov-item-prebrano {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: .82rem;
+      font-weight: 700;
+      color: #2e7d32;
+      margin-top: 4px;
+    }
+    body.dark-theme .snov-item-prebrano { color: #7ed27e; }
+
+    /* ── Moj napredek ── */
+    .napredek-panel { padding-bottom: 28px; }
+    .napredek-uvod {
+      font-size: 1.02rem;
+      line-height: 1.55;
+      color: var(--text);
+      margin-bottom: 22px;
+      background: rgba(74,126,207,.10);
+      border-left: 4px solid var(--accent);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    body.dark-theme .napredek-uvod { background: rgba(74,126,207,.18); }
+
+    .napredek-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .napredek-stat-card {
+      background: var(--bg);
+      border: 2px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 22px 18px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    body.dark-theme .napredek-stat-card { background: #2a2a40; }
+    .napredek-stat-emoji {
+      font-size: 2.2rem;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .napredek-stat-num {
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1.1;
+      margin-bottom: 4px;
+    }
+    .napredek-stat-text {
+      font-size: .95rem;
+      color: var(--text);
+      font-weight: 600;
+    }
+    .napredek-stat-pohvala {
+      margin-top: 10px;
+      font-size: .88rem;
+      font-style: italic;
+      color: #2e7d32;
+      min-height: 1.2em;
+    }
+    body.dark-theme .napredek-stat-pohvala { color: #9ad79a; }
+
+    .napredek-section { margin-top: 8px; }
+    .napredek-section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 14px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--accent);
+    }
+    .napredek-seznam {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .napredek-prazno {
+      font-size: .95rem;
+      color: #888;
+      line-height: 1.55;
+      padding: 8px 0;
+    }
+    body.dark-theme .napredek-prazno { color: #aaa; }
+    .napredek-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg);
+      border: 1.5px solid rgba(46,125,50,.4);
+      border-radius: 12px;
+      padding: 12px 14px;
+      box-shadow: var(--shadow);
+      word-break: break-word;
+    }
+    body.dark-theme .napredek-item { background: #2a2a40; border-color: rgba(126,210,126,.5); }
+    .napredek-item-kljukica {
+      flex-shrink: 0;
+      width: 30px; height: 30px;
+      display: inline-flex;
+      align-items: center; justify-content: center;
+      background: #2e7d32; color: #fff;
+      border-radius: 50%;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+    body.dark-theme .napredek-item-kljukica { background: #43a047; }
+    .napredek-item-naslov {
+      font-weight: 700;
+      font-size: .98rem;
+      color: var(--text);
+      flex: 1;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .napredek-item-datum {
+      font-size: .78rem;
+      color: #888;
+      flex-shrink: 0;
+    }
+    body.dark-theme .napredek-item-datum { color: #aaa; }
+
+    .napredek-reset-wrap {
+      margin-top: 28px;
+      display: flex;
+      justify-content: center;
+    }
+    .napredek-reset-btn {
+      background: none;
+      border: 1.5px dashed #aaa;
+      color: #888;
+      font-family: inherit;
+      font-size: .82rem;
+      font-weight: 600;
+      padding: 8px 18px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: color .2s, border-color .2s, background .2s;
+    }
+    .napredek-reset-btn:hover {
+      color: #c0392b;
+      border-color: #c0392b;
+    }
+    body.dark-theme .napredek-reset-btn { color: #aaa; border-color: #666; }
+    body.dark-theme .napredek-reset-btn:hover { color: #ff8a80; border-color: #ff8a80; }
+
     /* ── Responsive ── */
     @media (max-width: 560px) {
       .reader-box { padding: 20px 18px; }
@@ -1339,6 +1526,10 @@
       .tezka-beseda { flex-direction: column; gap: 4px; }
       .tezka-beseda-ime { min-width: unset; }
       .snov-item-actions { flex-direction: column; gap: 6px; }
+      .napredek-stats { grid-template-columns: 1fr; }
+      .napredek-item { flex-wrap: wrap; }
+      .napredek-item-datum { width: 100%; padding-left: 42px; }
+      .prebrano-btn { width: 100%; justify-content: center; }
     }
   </style>
 </head>
@@ -1388,6 +1579,11 @@
       <button class="home-btn secondary" onclick="showScreen('screen-slikaj')">
         <span class="btn-icon">📷</span>
         Slikaj stran
+      </button>
+
+      <button class="home-btn secondary" onclick="showScreen('screen-napredek')">
+        <span class="btn-icon">🌟</span>
+        Moj napredek
       </button>
 
       <button class="home-btn disabled" disabled>
@@ -1519,6 +1715,14 @@
       </div>
 
       <p class="tts-note">Naravni slovenski glas prek ElevenLabs. Ob napaki se samodejno preklopi na glas brskalnika.</p>
+    </div>
+
+    <!-- Označi kot prebrano (samo za besedila iz "Moja šolska snov") -->
+    <div class="prebrano-wrap" id="prebranoWrap" style="display:none;">
+      <button class="prebrano-btn" id="prebranoBtn" onclick="togglePrebrano()" aria-pressed="false">
+        <span class="prebrano-kljukica" aria-hidden="true">☐</span>
+        <span class="prebrano-tekst">Označi kot prebrano</span>
+      </button>
     </div>
 
     <!-- Reader box -->
@@ -1811,6 +2015,43 @@
 
   </div><!-- /screen-slikaj -->
 
+  <!-- ══════════════ MOJ NAPREDEK ══════════════ -->
+  <div class="screen" id="screen-napredek">
+    <button class="back-btn" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+
+    <div class="panel napredek-panel">
+      <div class="panel-title">🌟 Moj napredek</div>
+
+      <p class="napredek-uvod" id="napredekUvod"></p>
+
+      <div class="napredek-stats">
+        <div class="napredek-stat-card">
+          <div class="napredek-stat-emoji">📖</div>
+          <div class="napredek-stat-num" id="napredekStPrebranih">0</div>
+          <div class="napredek-stat-text" id="napredekStPrebranihTekst">prebranih besedil</div>
+          <div class="napredek-stat-pohvala" id="napredekPohvalaPrebrano"></div>
+        </div>
+        <div class="napredek-stat-card">
+          <div class="napredek-stat-emoji">🔁</div>
+          <div class="napredek-stat-num" id="napredekStPonavljanj">0</div>
+          <div class="napredek-stat-text" id="napredekStPonavljanjTekst">vaj ponavljanja</div>
+          <div class="napredek-stat-pohvala" id="napredekPohvalaPonavljanje"></div>
+        </div>
+      </div>
+
+      <div class="napredek-section">
+        <div class="napredek-section-title">📚 Tvoja prebrana besedila</div>
+        <div id="napredekSeznam" class="napredek-seznam"></div>
+      </div>
+
+      <div class="napredek-reset-wrap">
+        <button class="napredek-reset-btn" onclick="napredekPonastavi()" title="Za učitelja ob novem otroku">
+          ↺ Ponastavi napredek
+        </button>
+      </div>
+    </div>
+  </div><!-- /screen-napredek -->
+
 </div><!-- /app-wrap -->
 
 <!-- Fokus način – navigacijska vrstica -->
@@ -1832,6 +2073,7 @@
     if (id === 'screen-snov-predmeti') renderSnovPredmeti();
     if (id === 'screen-snov-teme') renderSnovTeme();
     if (id === 'screen-snov-besedila') renderSnovBesedila();
+    if (id === 'screen-napredek') renderNapredek();
   }
 
   // ── Fokus način – stanje ──
@@ -2042,7 +2284,7 @@
       .replace(/^---+$/gm, '');
   }
 
-  function setReaderText(txt) {
+  function setReaderText(txt, snovId, snovNaslov) {
     stopTTS();
     _fokusReset();
     if (typeof _dotikZapri === 'function') _dotikZapri();
@@ -2056,6 +2298,11 @@
     _renderMarkdownToBox(txt, box);
     applyColor();
     wrapWordsForTTS();
+    // Konteksst za "Sledenje napredka": je trenutno besedilo iz Moje šolske snovi?
+    _aktivnoSnovBesediloId    = (typeof snovId === 'number' || typeof snovId === 'string') ? snovId : null;
+    _aktivnoSnovBesediloNaslov = (typeof snovNaslov === 'string' && snovNaslov.trim()) ? snovNaslov.trim() : '';
+    _napredekObvescenoOPredvajanju = false;
+    _posodobiPrebranoBtn();
   }
 
   // ══════════════════════════════════════════════
@@ -2207,6 +2454,209 @@
       _updateZlogiBtn();
       renderReader();
     }
+  }
+
+  // ══════════════════════════════════════════════
+  // ── Sledenje napredka (spodbudno, na podlagi truda) ──
+  // ══════════════════════════════════════════════
+  // Beležimo izključno trud: katera besedila iz "Moja šolska snov" je otrok označil
+  // kot prebrana in kolikokrat je sploh izvedel ponavljanje. NIKOLI ne shranjujemo
+  // rezultatov kviza, časa branja, hitrosti, "streakov" ali primerjav.
+  // Shranjeno v enem zapisu: localStorage["ucnimost_napredek"].
+  const NAPREDEK_KEY = 'ucnimost_napredek';
+
+  // Kontekst trenutno odprtega besedila iz "Moja šolska snov" (sicer null/"").
+  let _aktivnoSnovBesediloId     = null;
+  let _aktivnoSnovBesediloNaslov = '';
+  let _napredekObvescenoOPredvajanju = false;
+
+  function getNapredek() {
+    let raw;
+    try { raw = JSON.parse(localStorage.getItem(NAPREDEK_KEY) || '{}'); }
+    catch { raw = {}; }
+    if (!raw || typeof raw !== 'object') raw = {};
+    if (!Array.isArray(raw.prebrana)) raw.prebrana = [];
+    if (typeof raw.ponavljanja !== 'number' || !isFinite(raw.ponavljanja) || raw.ponavljanja < 0) raw.ponavljanja = 0;
+    return raw;
+  }
+  function setNapredek(np) {
+    try { localStorage.setItem(NAPREDEK_KEY, JSON.stringify(np)); } catch (_) {}
+  }
+
+  function _napredekIdKey(id) {
+    // Identitete besedil iz snovi shranjujemo kot nize zaradi enotnega ujemanja
+    // (Date.now() lahko v JSON-u/HTML-u nastopa kot število ali niz).
+    return String(id);
+  }
+
+  function napredekJePrebrano(id) {
+    if (id === null || id === undefined) return false;
+    const key = _napredekIdKey(id);
+    return getNapredek().prebrana.some(p => _napredekIdKey(p.id) === key);
+  }
+
+  function napredekOznaciPrebrano(id, naslov) {
+    if (id === null || id === undefined) return;
+    const np = getNapredek();
+    const key = _napredekIdKey(id);
+    if (!np.prebrana.some(p => _napredekIdKey(p.id) === key)) {
+      np.prebrana.unshift({
+        id: id,
+        naslov: (naslov && String(naslov).trim()) || 'Besedilo',
+        datum: new Date().toLocaleDateString('sl-SI'),
+      });
+      setNapredek(np);
+    } else if (naslov && String(naslov).trim()) {
+      // Posodobi shranjeni naslov, če se je v snovi preimenoval.
+      np.prebrana = np.prebrana.map(p =>
+        _napredekIdKey(p.id) === key ? { ...p, naslov: String(naslov).trim() } : p
+      );
+      setNapredek(np);
+    }
+  }
+
+  function napredekOdznaciPrebrano(id) {
+    if (id === null || id === undefined) return;
+    const np = getNapredek();
+    const key = _napredekIdKey(id);
+    np.prebrana = np.prebrana.filter(p => _napredekIdKey(p.id) !== key);
+    setNapredek(np);
+  }
+
+  function napredekDodajPonavljanje() {
+    const np = getNapredek();
+    np.ponavljanja = (np.ponavljanja || 0) + 1;
+    setNapredek(np);
+  }
+
+  // Gumb v bralniku — prikaz/skritje + stanje.
+  function _posodobiPrebranoBtn() {
+    const wrap = document.getElementById('prebranoWrap');
+    const btn  = document.getElementById('prebranoBtn');
+    if (!wrap || !btn) return;
+    if (_aktivnoSnovBesediloId === null || _aktivnoSnovBesediloId === undefined) {
+      wrap.style.display = 'none';
+      return;
+    }
+    wrap.style.display = '';
+    const je = napredekJePrebrano(_aktivnoSnovBesediloId);
+    btn.classList.toggle('je-prebrano', je);
+    btn.setAttribute('aria-pressed', je ? 'true' : 'false');
+    btn.querySelector('.prebrano-kljukica').textContent = je ? '✓' : '☐';
+    btn.querySelector('.prebrano-tekst').textContent  = je ? 'Prebrano – bravo!' : 'Označi kot prebrano';
+  }
+
+  function togglePrebrano() {
+    if (_aktivnoSnovBesediloId === null || _aktivnoSnovBesediloId === undefined) return;
+    if (napredekJePrebrano(_aktivnoSnovBesediloId)) {
+      napredekOdznaciPrebrano(_aktivnoSnovBesediloId);
+    } else {
+      napredekOznaciPrebrano(_aktivnoSnovBesediloId, _aktivnoSnovBesediloNaslov);
+    }
+    _posodobiPrebranoBtn();
+  }
+
+  // Po koncu predvajanja: če je besedilo iz snovi in še ni označeno, vljudno ponudi.
+  function napredekPonudiPrebrano() {
+    if (_napredekObvescenoOPredvajanju) return;
+    if (_aktivnoSnovBesediloId === null || _aktivnoSnovBesediloId === undefined) return;
+    if (napredekJePrebrano(_aktivnoSnovBesediloId)) return;
+    _napredekObvescenoOPredvajanju = true;
+    setTimeout(() => {
+      const ok = confirm('Bravo, poslušal si besedilo do konca! Naj ga označim kot prebrano? 🌟');
+      if (ok) {
+        napredekOznaciPrebrano(_aktivnoSnovBesediloId, _aktivnoSnovBesediloNaslov);
+        _posodobiPrebranoBtn();
+      }
+    }, 250);
+  }
+
+  // Topla, spodbudna besedila ob mejnikih (samo pohvale; brez pritiska).
+  function _napredekPohvalaPrebrano(n) {
+    if (n === 0) return 'Vsako besedilo, ki ga prebereš, šteje. Začni, ko si pripravljen. 🌱';
+    if (n === 1) return 'Sijajno – prvo besedilo je za tabo! 🌟';
+    if (n < 5)   return 'Odlično, kar tako naprej! 💪';
+    if (n === 5) return 'Wow, 5 besedil! Krasen trud. ✨';
+    if (n < 10)  return 'Super si – že kar nekaj besedil je za tabo. 🌈';
+    if (n === 10)return 'Bravo, 10 besedil! Čestitke za vztrajnost. 🏅';
+    if (n < 25)  return 'Tvoj trud je res lep. 🌻';
+    return 'Pravi bralec si – ponosen si lahko nase. 🌟';
+  }
+  function _napredekPohvalaPonavljanje(n) {
+    if (n === 0) return 'Ko boš pripravljen, lahko narediš svojo prvo vajo. 🌱';
+    if (n === 1) return 'Bravo – prva vaja je za tabo! ✨';
+    if (n < 5)   return 'Lepo, vsaka vaja pomaga. 💪';
+    if (n === 5) return 'Že 5 vaj – odlično! 🌟';
+    if (n < 10)  return 'Krasen trud, kar tako naprej. 🌈';
+    if (n === 10)return 'Wow, 10 vaj ponavljanja! Bravo. 🏅';
+    return 'Tvoja vztrajnost je res lepa. 🌻';
+  }
+
+  // Izris zaslona "Moj napredek".
+  function renderNapredek() {
+    const np = getNapredek();
+    const prebranoSt = np.prebrana.length;
+    const ponSt      = np.ponavljanja || 0;
+
+    // Topel uvod, ki spoštuje začetno stanje brez pritiska.
+    const uvodEl = document.getElementById('napredekUvod');
+    if (uvodEl) {
+      if (prebranoSt === 0 && ponSt === 0) {
+        uvodEl.textContent = 'Pozdravljen! Tu se zbira tvoj trud. Vsak korak šteje – brez naglice. 🌟';
+      } else {
+        uvodEl.textContent = 'Lepo, da si tu. Poglej, koliko si že naredil – ponosen si lahko nase. 🌟';
+      }
+    }
+
+    // Statistike.
+    const stPrebEl = document.getElementById('napredekStPrebranih');
+    const stPrebTxt = document.getElementById('napredekStPrebranihTekst');
+    const pohvPreb = document.getElementById('napredekPohvalaPrebrano');
+    if (stPrebEl)  stPrebEl.textContent = String(prebranoSt);
+    if (stPrebTxt) stPrebTxt.textContent =
+      prebranoSt === 1 ? 'prebrano besedilo'
+      : (prebranoSt % 100 >= 2 && prebranoSt % 100 <= 4) ? 'prebrana besedila'
+      : 'prebranih besedil';
+    if (pohvPreb)  pohvPreb.textContent = _napredekPohvalaPrebrano(prebranoSt);
+
+    const stPonEl = document.getElementById('napredekStPonavljanj');
+    const stPonTxt = document.getElementById('napredekStPonavljanjTekst');
+    const pohvPon = document.getElementById('napredekPohvalaPonavljanje');
+    if (stPonEl)  stPonEl.textContent = String(ponSt);
+    if (stPonTxt) stPonTxt.textContent =
+      ponSt === 1 ? 'vaja ponavljanja'
+      : (ponSt % 100 >= 2 && ponSt % 100 <= 4) ? 'vaji ponavljanja'
+      : 'vaj ponavljanja';
+    if (pohvPon)  pohvPon.textContent = _napredekPohvalaPonavljanje(ponSt);
+
+    // Seznam prebranih besedil.
+    const list = document.getElementById('napredekSeznam');
+    if (!list) return;
+    list.innerHTML = '';
+    if (prebranoSt === 0) {
+      const p = document.createElement('p');
+      p.className = 'napredek-prazno';
+      p.textContent = 'Tu se bodo prikazala besedila, ki jih označiš kot prebrana v "Moja šolska snov". ✨';
+      list.appendChild(p);
+      return;
+    }
+    np.prebrana.forEach(p => {
+      const item = document.createElement('div');
+      item.className = 'napredek-item';
+      item.innerHTML = `
+        <span class="napredek-item-kljukica" aria-hidden="true">✓</span>
+        <span class="napredek-item-naslov">${escHtml(p.naslov || 'Besedilo')}</span>
+        <span class="napredek-item-datum">${escHtml(p.datum || '')}</span>`;
+      list.appendChild(item);
+    });
+  }
+
+  function napredekPonastavi() {
+    const ok = confirm('Si prepričan, da želiš ponastaviti napredek?\nIzbrisali bomo seznam prebranih besedil in števec ponavljanj.\n(Druga besedila in nastavitve ostanejo.)');
+    if (!ok) return;
+    setNapredek({ prebrana: [], ponavljanja: 0 });
+    _posodobiPrebranoBtn();
+    renderNapredek();
   }
 
   // ── Saved texts (localStorage) ──
@@ -2588,6 +3038,7 @@
         clearHighlight();
         _freeTtsAudio();
         updateTTSButtons();
+        try { napredekPonudiPrebrano(); } catch (_) {}
       };
       ttsAudio.onerror = () => {
         ttsState = 'stopped';
@@ -2612,6 +3063,7 @@
         ttsState = 'stopped';
         clearHighlight();
         updateTTSButtons();
+        try { napredekPonudiPrebrano(); } catch (_) {}
       });
     }
   }
@@ -2889,6 +3341,9 @@
       showPonError('V bralniku ni besedila. Najprej prilepi ali odpri besedilo v bralniku.');
       return;
     }
+
+    // Sledenje napredka: štejemo število ponavljanj kot vaj (trud, ne rezultat).
+    try { napredekDodajPonavljanje(); } catch (_) {}
 
     const navodilo = `Odgovori IZKLJUČNO z veljavnim JSON-om (brez markdown oznak, brez dodatnega besedila, brez \`\`\`json). JSON mora biti točno v tej obliki:
 {"kartice":[{"pojem":"...","razlaga":"..."}],"kviz":[{"vprasanje":"...","moznosti":["...","...","..."],"pravilni_index":0}],"tezke_besede":[{"beseda":"...","razlaga":"..."}]}
@@ -3539,11 +3994,16 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     besedila.forEach(b => {
       const el = document.createElement('div');
       el.className = 'snov-item';
+      const jePrebrano = napredekJePrebrano(b.id);
+      const prebranoMarker = jePrebrano
+        ? `<div class="snov-item-prebrano" title="Prebral si to besedilo"><span aria-hidden="true">✓</span> prebrano</div>`
+        : '';
       el.innerHTML = `
         <div class="snov-item-icon">📃</div>
         <div class="snov-item-info">
           <div class="snov-item-name">${escHtml(b.naslov || b.vsebina.slice(0,50))}</div>
           <div class="snov-item-meta">${b.datum} · ${b.vsebina.length} znakov</div>
+          ${prebranoMarker}
         </div>
         <div class="snov-item-actions">
           <button class="icon-btn open" data-id="${b.id}">Odpri</button>
@@ -3552,7 +4012,10 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
         </div>`;
       el.querySelector('.icon-btn.open').addEventListener('click', function() {
         const item = snovGetBesedilo(parseInt(this.dataset.id));
-        if (item) { setReaderText(item.vsebina); showScreen('screen-reader'); }
+        if (item) {
+          setReaderText(item.vsebina, item.id, item.naslov || '');
+          showScreen('screen-reader');
+        }
       });
       el.querySelector('.icon-btn.rename').addEventListener('click', function() {
         snovPreimenujBesedilo(parseInt(this.dataset.id));
@@ -3609,6 +4072,14 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     if (!novoIme || !novoIme.trim()) return;
     b.naslov = novoIme.trim();
     setSnovData(data);
+    // Če je to besedilo označeno kot prebrano, posodobi tudi shranjeni naslov v napredku.
+    try {
+      if (napredekJePrebrano(id)) napredekOznaciPrebrano(id, b.naslov);
+      if (_aktivnoSnovBesediloId !== null && String(_aktivnoSnovBesediloId) === String(id)) {
+        _aktivnoSnovBesediloNaslov = b.naslov;
+        _posodobiPrebranoBtn();
+      }
+    } catch (_) {}
     renderSnovBesedila();
   }
 
