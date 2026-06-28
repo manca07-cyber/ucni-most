@@ -654,12 +654,156 @@
     .mm-result-wrap { margin-top: 28px; display: none; }
     .mm-result-wrap.visible { display: block; }
     .mm-svg-wrap {
-      overflow-x: auto; overflow-y: hidden;
       border-radius: var(--radius);
-      border: 2px solid var(--panel);
-      background: #fafafa;
+      background: transparent;
+      border: none;
     }
-    body.dark-theme .mm-svg-wrap { background: #1e1e30; border-color: #333; }
+
+    .mm-board {
+      position: relative;
+      padding: 32px 22px 28px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #fdf6ff 0%, #f1f8ff 45%, #f3fff5 100%);
+      box-shadow: 0 4px 22px rgba(0,0,0,.06);
+      overflow: hidden;
+    }
+    body.dark-theme .mm-board {
+      background: linear-gradient(135deg, #201938 0%, #15233a 50%, #163026 100%);
+      box-shadow: 0 4px 22px rgba(0,0,0,.30);
+    }
+
+    .mm-lines {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .mm-center {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: center;
+      margin-bottom: 44px;
+    }
+    .mm-center-inner {
+      display: inline-block;
+      max-width: 80%;
+      text-align: center;
+      background: linear-gradient(135deg, #4a7ecf 0%, #6b5bcf 100%);
+      color: #fff;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 1.25rem;
+      letter-spacing: .02em;
+      padding: 18px 32px;
+      border-radius: 999px;
+      box-shadow: 0 8px 22px rgba(74,126,207,.30), 0 2px 8px rgba(107,91,207,.20);
+    }
+    body.dark-theme .mm-center-inner {
+      box-shadow: 0 8px 22px rgba(74,126,207,.45);
+    }
+
+    .mm-branches {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 22px 24px;
+    }
+
+    .mm-branch {
+      background: var(--c-bg);
+      border: 2.5px solid var(--c-border);
+      border-radius: 20px;
+      padding: 16px 18px 14px;
+      box-shadow: 0 3px 14px rgba(0,0,0,.06);
+      transition: transform .2s, box-shadow .2s;
+      font-family: inherit;
+      break-inside: avoid;
+    }
+    .mm-branch:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,.10);
+    }
+
+    .mm-branch-title {
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 1.05rem;
+      line-height: 1.3;
+      color: var(--c-strong);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      letter-spacing: .01em;
+    }
+    .mm-branch-title::before {
+      content: "";
+      width: 11px;
+      height: 11px;
+      background: var(--c-strong);
+      border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 3px var(--c-border);
+    }
+
+    .mm-branch-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .mm-branch-list li {
+      position: relative;
+      padding-left: 18px;
+      margin: 6px 0;
+      font-size: .95rem;
+      line-height: 1.5;
+      color: var(--text);
+    }
+    .mm-branch-list li::before {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: .58em;
+      width: 7px;
+      height: 7px;
+      background: var(--c-strong);
+      border-radius: 50%;
+      opacity: .85;
+    }
+
+    /* Pastelna paleta — svetla tema */
+    .mm-branch[data-color="0"] { --c-bg:#f5e9ff; --c-border:#caa3ff; --c-strong:#7e3ad0; }
+    .mm-branch[data-color="1"] { --c-bg:#e3f0ff; --c-border:#9ec5ee; --c-strong:#2a6ebb; }
+    .mm-branch[data-color="2"] { --c-bg:#e2f8e8; --c-border:#92d6a3; --c-strong:#1f8a3e; }
+    .mm-branch[data-color="3"] { --c-bg:#ffe9d6; --c-border:#f3ba88; --c-strong:#c4682a; }
+    .mm-branch[data-color="4"] { --c-bg:#d6f5ec; --c-border:#82d4be; --c-strong:#0e8c75; }
+    .mm-branch[data-color="5"] { --c-bg:#fde2ec; --c-border:#f0a3bf; --c-strong:#b9356f; }
+    .mm-branch[data-color="6"] { --c-bg:#fff4cc; --c-border:#e6c862; --c-strong:#8c6a10; }
+
+    /* Pastelna paleta — temna tema (svetlejši kontrast) */
+    body.dark-theme .mm-branch[data-color="0"] { --c-bg:rgba(126,58,208,.20); --c-border:#a47fe0; --c-strong:#dcc1ff; }
+    body.dark-theme .mm-branch[data-color="1"] { --c-bg:rgba(42,110,187,.22);  --c-border:#6ba0db; --c-strong:#bcd8f8; }
+    body.dark-theme .mm-branch[data-color="2"] { --c-bg:rgba(31,138,62,.22);   --c-border:#6ec286; --c-strong:#aeebbc; }
+    body.dark-theme .mm-branch[data-color="3"] { --c-bg:rgba(196,104,42,.24);  --c-border:#e69e6c; --c-strong:#fcc998; }
+    body.dark-theme .mm-branch[data-color="4"] { --c-bg:rgba(14,140,117,.22);  --c-border:#5fc2aa; --c-strong:#a8eeda; }
+    body.dark-theme .mm-branch[data-color="5"] { --c-bg:rgba(185,53,111,.24);  --c-border:#e2839f; --c-strong:#fbbcd1; }
+    body.dark-theme .mm-branch[data-color="6"] { --c-bg:rgba(154,120,19,.26);  --c-border:#d4b556; --c-strong:#f5e4a3; }
+
+    /* Mobilni prikaz */
+    @media (max-width: 640px) {
+      .mm-board { padding: 22px 14px 18px; border-radius: 18px; }
+      .mm-branches { grid-template-columns: 1fr; gap: 16px; }
+      .mm-center { margin-bottom: 30px; }
+      .mm-center-inner { font-size: 1.05rem; padding: 14px 22px; max-width: 92%; }
+      .mm-branch-title { font-size: 1rem; }
+      .mm-branch-list li { font-size: .92rem; }
+    }
+
     .btn-print-mm {
       display: inline-flex; align-items: center; gap: 8px;
       background: #1a1a2e; color: #fff;
@@ -669,6 +813,33 @@
       transition: background .2s;
     }
     .btn-print-mm:hover { background: #2d2d50; }
+
+    /* Tiskanje miselnega vzorca */
+    @media print {
+      @page { size: landscape; margin: 10mm; }
+      body.printing-mm { background: #fff !important; }
+      body.printing-mm * { visibility: hidden; }
+      body.printing-mm .mm-result-wrap,
+      body.printing-mm .mm-result-wrap * { visibility: visible; }
+      body.printing-mm .mm-result-wrap {
+        position: absolute;
+        left: 0; top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      body.printing-mm .mm-result-wrap .btn-print-mm { display: none !important; }
+      body.printing-mm .mm-board,
+      body.printing-mm .mm-branch,
+      body.printing-mm .mm-center-inner,
+      body.printing-mm .ai-unverified-badge {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      body.printing-mm .mm-board { box-shadow: none; }
+      body.printing-mm .mm-branch { box-shadow: none; }
+      body.printing-mm .ai-unverified-badge { margin-bottom: 12px; }
+    }
 
     /* ── Loading spinner ── */
     .ai-loading {
@@ -3693,6 +3864,10 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
   function showMmResult(data) {
     document.getElementById('mmSvgWrap').innerHTML = renderMiselniVzorec(data);
     document.getElementById('mmResultWrap').classList.add('visible');
+    requestAnimationFrame(() => {
+      drawMmLines();
+      requestAnimationFrame(drawMmLines);
+    });
   }
 
   function hideMmResult() {
@@ -3700,117 +3875,108 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
   }
 
   function printMiselniVzorec() {
-    const svgHtml = document.getElementById('mmSvgWrap').innerHTML;
-    const win = window.open('', '_blank');
-    win.document.write(
-      '<!DOCTYPE html><html><head><title>Miselni vzorec</title>' +
-      '<style>body{margin:0;padding:16px;}svg{width:100%;height:auto;}</style>' +
-      '</head><body>' + svgHtml + '</body></html>'
-    );
-    win.document.close();
-    win.focus();
-    win.print();
+    if (!document.getElementById('mmBoard')) return;
+    document.body.classList.add('printing-mm');
+    requestAnimationFrame(() => {
+      drawMmLines();
+      setTimeout(() => {
+        try { window.print(); }
+        finally {
+          document.body.classList.remove('printing-mm');
+          requestAnimationFrame(drawMmLines);
+        }
+      }, 60);
+    });
   }
 
   function renderMiselniVzorec(data) {
-    const { sredisce, veje } = data;
-    const paleta = [
-      { main: '#4a7ecf', light: '#bdd4f6' },
-      { main: '#27ae60', light: '#a8dfc2' },
-      { main: '#e67e22', light: '#f5c99a' },
-      { main: '#8e44ad', light: '#d0a9e0' },
-      { main: '#c0392b', light: '#f0a09a' },
-      { main: '#16a085', light: '#88d8cc' },
-      { main: '#c2185b', light: '#f0a0c0' },
-    ];
-
-    const N = Math.min((veje || []).length, 7);
-    const W = 1100, H = 900;
-    const cx = W / 2, cy = H / 2;
-    const branchDist = 230;
-    const subDist = 150;
-    const crx = 88, cry = 44;
-
     function esc(s) {
-      return String(s)
+      return String(s == null ? '' : s)
         .replace(/&/g, '&amp;').replace(/</g, '&lt;')
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    function wrapWords(text, maxCh) {
-      const words = String(text).split(' ');
-      const lines = [];
-      let cur = '';
-      for (const w of words) {
-        const test = cur ? cur + ' ' + w : w;
-        if (test.length <= maxCh) { cur = test; }
-        else { if (cur) lines.push(cur); cur = w; }
+    const sredisce = (data && data.sredisce) ? String(data.sredisce).trim() : 'Tema';
+    const vejeAll = (data && Array.isArray(data.veje)) ? data.veje : [];
+    const veje = vejeAll.slice(0, 7);
+
+    let html = '<div class="mm-board" id="mmBoard">';
+    html += '<svg class="mm-lines" id="mmLines" preserveAspectRatio="none" aria-hidden="true"></svg>';
+    html += '<div class="mm-center"><div class="mm-center-inner">' + esc(sredisce) + '</div></div>';
+    html += '<div class="mm-branches">';
+
+    veje.forEach((v, i) => {
+      const naslov = (v && v.naslov) ? String(v.naslov).trim() : '';
+      const subs = (v && Array.isArray(v.podtocke)) ? v.podtocke.slice(0, 6) : [];
+      html += '<article class="mm-branch" data-color="' + (i % 7) + '">';
+      if (naslov) html += '<h3 class="mm-branch-title">' + esc(naslov) + '</h3>';
+      if (subs.length) {
+        html += '<ul class="mm-branch-list">';
+        subs.forEach(s => {
+          const t = String(s == null ? '' : s).trim();
+          if (t) html += '<li>' + esc(t) + '</li>';
+        });
+        html += '</ul>';
       }
-      if (cur) lines.push(cur);
-      return lines;
-    }
+      html += '</article>';
+    });
 
-    function svgTextLines(x, y, text, opts) {
-      const { fill = '#fff', size = 13, weight = '400', maxCh = 13 } = opts || {};
-      const lines = wrapWords(text, maxCh);
-      const lh = size * 1.35;
-      const startY = y - (lines.length - 1) * lh / 2;
-      return lines.map((l, i) =>
-        `<text x="${x.toFixed(1)}" y="${(startY + i * lh).toFixed(1)}" ` +
-        `text-anchor="middle" dominant-baseline="middle" ` +
-        `font-family="Lexend,sans-serif" font-size="${size}" font-weight="${weight}" fill="${fill}">` +
-        esc(l) + '</text>'
-      ).join('');
-    }
-
-    let out = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="min-width:620px;display:block;">`;
-    out += `<rect width="${W}" height="${H}" fill="#fafafa" rx="16"/>`;
-
-    // Center node
-    out += `<ellipse cx="${cx}" cy="${cy}" rx="${crx}" ry="${cry}" fill="#1a1a2e"/>`;
-    out += svgTextLines(cx, cy, sredisce || '', { fill: '#fff', size: 16, weight: '700', maxCh: 11 });
-
-    for (let i = 0; i < N; i++) {
-      const ang = ((i * 360 / N) - 90) * Math.PI / 180;
-      const c = paleta[i % paleta.length];
-
-      const ex = cx + crx * Math.cos(ang);
-      const ey = cy + cry * Math.sin(ang);
-      const bx = cx + branchDist * Math.cos(ang);
-      const by = cy + branchDist * Math.sin(ang);
-
-      // Main line
-      out += `<line x1="${ex.toFixed(1)}" y1="${ey.toFixed(1)}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}" ` +
-             `stroke="${c.main}" stroke-width="5" stroke-linecap="round"/>`;
-
-      // Branch node
-      out += `<ellipse cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" rx="70" ry="28" fill="${c.main}"/>`;
-      out += svgTextLines(bx, by, (veje[i] || {}).naslov || '', { fill: '#fff', size: 12, weight: '600', maxCh: 12 });
-
-      // Sub-points
-      const subs = ((veje[i] || {}).podtocke || []).slice(0, 4);
-      const spacing = 44;
-      const totalOffset = (subs.length - 1) * spacing / 2;
-      const px = -Math.sin(ang);
-      const py = Math.cos(ang);
-
-      subs.forEach((sub, j) => {
-        const off = j * spacing - totalOffset;
-        const sx = bx + subDist * Math.cos(ang) + px * off;
-        const sy = by + subDist * Math.sin(ang) + py * off;
-        const rw = 112, rh = 34;
-
-        out += `<line x1="${bx.toFixed(1)}" y1="${by.toFixed(1)}" x2="${sx.toFixed(1)}" y2="${sy.toFixed(1)}" ` +
-               `stroke="${c.light}" stroke-width="2.5" stroke-linecap="round"/>`;
-        out += `<rect x="${(sx - rw / 2).toFixed(1)}" y="${(sy - rh / 2).toFixed(1)}" ` +
-               `width="${rw}" height="${rh}" rx="9" fill="${c.light}"/>`;
-        out += svgTextLines(sx, sy, sub, { fill: '#1a1a2e', size: 11, maxCh: 15 });
-      });
-    }
-
-    out += '</svg>';
-    return out;
+    html += '</div></div>';
+    return html;
   }
+
+  function drawMmLines() {
+    const board = document.getElementById('mmBoard');
+    const svg   = document.getElementById('mmLines');
+    if (!board || !svg) return;
+    const center = board.querySelector('.mm-center-inner');
+    const branches = board.querySelectorAll('.mm-branch');
+    if (!center || !branches.length) { svg.innerHTML = ''; return; }
+
+    const bRect = board.getBoundingClientRect();
+    const W = bRect.width, H = bRect.height;
+    if (W < 10 || H < 10) return;
+    svg.setAttribute('viewBox', '0 0 ' + W.toFixed(0) + ' ' + H.toFixed(0));
+
+    const cRect = center.getBoundingClientRect();
+    const cx = cRect.left + cRect.width / 2 - bRect.left;
+    const cy = cRect.bottom - bRect.top;
+
+    const isDark = document.body.classList.contains('dark-theme');
+    const palette = isDark
+      ? ['#d4b3ff', '#9bc4ee', '#9ce2af', '#f3b889', '#8de0c8', '#f2a7c2', '#ecd17a']
+      : ['#7e3ad0', '#2a6ebb', '#1f8a3e', '#c4682a', '#0e8c75', '#b9356f', '#8c6a10'];
+
+    let paths = '';
+    branches.forEach(br => {
+      const r = br.getBoundingClientRect();
+      const bx = r.left + r.width / 2 - bRect.left;
+      const by = r.top - bRect.top;
+      const idx = parseInt(br.getAttribute('data-color') || '0', 10);
+      const color = palette[idx % palette.length];
+      const dy = Math.max(36, Math.abs(by - cy) * 0.55);
+      const d = 'M ' + cx.toFixed(1) + ' ' + cy.toFixed(1) +
+                ' C ' + cx.toFixed(1) + ' ' + (cy + dy).toFixed(1) + ', ' +
+                bx.toFixed(1) + ' ' + (by - dy).toFixed(1) + ', ' +
+                bx.toFixed(1) + ' ' + by.toFixed(1);
+      paths += '<path d="' + d + '" stroke="' + color + '" stroke-width="2.4" fill="none" stroke-linecap="round" opacity="0.6"/>';
+    });
+    svg.innerHTML = paths;
+  }
+
+  window.addEventListener('resize', () => {
+    const wrap = document.getElementById('mmResultWrap');
+    if (wrap && wrap.classList.contains('visible')) drawMmLines();
+  });
+  window.addEventListener('beforeprint', () => {
+    const wrap = document.getElementById('mmResultWrap');
+    if (wrap && wrap.classList.contains('visible')) drawMmLines();
+  });
+  window.addEventListener('afterprint', () => {
+    document.body.classList.remove('printing-mm');
+    const wrap = document.getElementById('mmResultWrap');
+    if (wrap && wrap.classList.contains('visible')) drawMmLines();
+  });
 
   // ══════════════════════════════════════════════
   // ── Moja šolska snov ──
