@@ -353,12 +353,19 @@
     }
 
     /* Toggle switch (npr. velike tiskane črke) */
-    .switch {
+    .switch,
+    label.switch,
+    .ctrl-group label.switch {
       display: inline-flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       cursor: pointer;
       user-select: none;
+      margin: 0;
+      padding: 6px 4px;
+      min-height: 44px;
+      max-width: 100%;
+      flex-wrap: wrap;
     }
     .switch input {
       position: absolute;
@@ -368,19 +375,21 @@
       pointer-events: none;
     }
     .switch-slider {
+      display: inline-block;
       position: relative;
-      width: 48px;
-      height: 26px;
+      width: 52px;
+      height: 30px;
       background: #ccc;
-      border-radius: 26px;
+      border-radius: 30px;
       transition: background .2s;
       flex-shrink: 0;
+      vertical-align: middle;
     }
     .switch-slider::before {
       content: '';
       position: absolute;
-      width: 20px;
-      height: 20px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       background: #fff;
       top: 3px;
@@ -392,12 +401,23 @@
     .switch input:checked + .switch-slider::before { transform: translateX(22px); }
     .switch input:focus-visible + .switch-slider { box-shadow: 0 0 0 3px rgba(74,126,207,.35); }
     .switch-text {
-      font-size: .9rem;
-      font-weight: 600;
+      display: inline-block;
+      font-size: .95rem;
+      font-weight: 700;
       color: #666;
+      margin: 0;
+      line-height: 1.2;
+      white-space: nowrap;
     }
+    .switch input:checked ~ .switch-text { color: var(--accent); }
     body.dark-theme .switch-slider { background: #555; }
     body.dark-theme .switch-text { color: #aaa; }
+    body.dark-theme .switch input:checked ~ .switch-text { color: var(--accent); }
+    .switch-wrap {
+      display: block;
+      width: 100%;
+      overflow: hidden;
+    }
 
     /* ── Color picker panel ── */
     .color-panel {
@@ -1895,11 +1915,13 @@
 
         <div class="ctrl-group">
           <label for="uppercaseToggle">Velike tiskane črke</label>
-          <label class="switch" for="uppercaseToggle">
-            <input type="checkbox" id="uppercaseToggle" />
-            <span class="switch-slider" aria-hidden="true"></span>
-            <span class="switch-text" id="uppercaseLabel">izklopljeno</span>
-          </label>
+          <div class="switch-wrap">
+            <label class="switch" for="uppercaseToggle">
+              <input type="checkbox" id="uppercaseToggle" />
+              <span class="switch-slider" aria-hidden="true"></span>
+              <span class="switch-text" id="uppercaseLabel">izklopljeno</span>
+            </label>
+          </div>
         </div>
 
       </div>
