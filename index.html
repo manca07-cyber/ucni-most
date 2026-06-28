@@ -1586,10 +1586,9 @@
         Moj napredek
       </button>
 
-      <button class="home-btn disabled" disabled>
+      <button class="home-btn secondary" onclick="showScreen('screen-nalozi')">
         <span class="btn-icon">📂</span>
         Naloži datoteko
-        <span class="soon-badge">kmalu</span>
       </button>
 
     </div>
@@ -2015,6 +2014,60 @@
 
   </div><!-- /screen-slikaj -->
 
+  <!-- ══════════════ NALOŽI DATOTEKO ══════════════ -->
+  <div class="screen" id="screen-nalozi">
+    <button class="back-btn" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+
+    <div class="panel">
+      <div class="panel-title">📂 Naloži datoteko</div>
+      <p style="font-size:.95rem;color:#666;margin-bottom:20px;line-height:1.6;">
+        Naloži datoteko v obliki PDF, Word (.docx) ali slike (.jpg, .jpeg, .png).
+        Aplikacija bo iz nje izluščila besedilo.
+      </p>
+
+      <!-- Skrit vhod za datoteko -->
+      <input type="file" id="naloziInput"
+             accept=".pdf,.docx,.jpg,.jpeg,.png,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png"
+             style="display:none;" onchange="handleNaloziFile(event)" />
+
+      <div class="slikaj-upload-row">
+        <button class="slikaj-btn camera" onclick="document.getElementById('naloziInput').click()">
+          📂 Izberi datoteko
+        </button>
+      </div>
+
+      <p style="font-size:.85rem;color:#888;margin:-12px 0 20px;">
+        Sprejete vrste: PDF, DOCX, JPG, JPEG, PNG
+      </p>
+
+      <!-- Nalaganje s sporočilom o napredku -->
+      <div class="ai-loading" id="naloziLoading">
+        <div class="spinner"></div>
+        <span id="naloziLoadingTxt">Berem datoteko …</span>
+      </div>
+
+      <!-- Napaka -->
+      <div class="ai-error" id="naloziError"></div>
+
+      <!-- Rezultat -->
+      <div id="naloziResultWrap" style="display:none;">
+        <div class="slikaj-warning">
+          ⚠️ Besedilo, pridobljeno iz datoteke, je nepreverjeno in je lahko mestoma nepopolno.
+          Preden ga uporabiš, ga preberi in po potrebi popravi.
+        </div>
+        <div class="panel-title">Pridobljeno besedilo (po potrebi popravi):</div>
+        <textarea class="paste-area" id="naloziBesedilo" style="min-height:280px;"></textarea>
+        <div class="action-row" style="margin-top:16px;">
+          <button class="btn-primary" onclick="naloziOdpriVBralniku()">📖 Odpri v bralniku</button>
+          <button class="btn-secondary" onclick="naloziPokaziSnovDialog()">🎒 Shrani v šolsko snov</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mesto, kamor se po potrebi prestavi dialog "Shrani v šolsko snov"
+         iz screen-slikaj. Vsebina se vstavi prek JS (glej _ssVrniDialogVScreen). -->
+  </div><!-- /screen-nalozi -->
+
   <!-- ══════════════ MOJ NAPREDEK ══════════════ -->
   <div class="screen" id="screen-napredek">
     <button class="back-btn" onclick="showScreen('screen-home')">← Nazaj na domov</button>
@@ -2060,6 +2113,16 @@
   <span class="fokus-nav-counter" id="fokusNavStev"></span>
   <button class="fokus-nav-btn" id="fokusNavNaprej" onclick="fokusNaprej()">Naprej →</button>
 </div>
+
+<!-- Knjižnici za branje .docx (Mammoth.js) in .pdf (PDF.js) – iz cdnjs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+  if (window['pdfjsLib'] && window['pdfjsLib'].GlobalWorkerOptions) {
+    window['pdfjsLib'].GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+</script>
 
 <script>
   // ── Navigation ──
@@ -4179,6 +4242,8 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
   function slikajPokaziSnovDialog() {
     const txt = document.getElementById('slikajBesedilo').value.trim();
     if (!txt) { alert('Najprej preberi besedilo s slike.'); return; }
+    _ssActiveSourceId = 'slikajBesedilo';
+    _ssVrniDialogVScreen('screen-slikaj');
     document.getElementById('slikajSnovDialog').style.display = 'block';
     ssPokaziKorak(1);
   }
@@ -4188,8 +4253,20 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     _ssReset();
   }
 
+  // Premakne dialog "Shrani v šolsko snov" v podan zaslon, da je viden ne glede
+  // na to, ali ga odpremo iz "Slikaj stran" ali iz "Naloži datoteko".
+  function _ssVrniDialogVScreen(screenId) {
+    const dlg = document.getElementById('slikajSnovDialog');
+    if (!dlg) return;
+    const target = document.getElementById(screenId);
+    if (!target) return;
+    if (dlg.parentElement !== target) target.appendChild(dlg);
+  }
+
   // ── Stanje za SS (shrani-v-snov) dialog ──
   let _ssSola = null, _ssRazred = null, _ssPredmetId = null, _ssTemaId = null;
+  // Iz katerega textarea naj se prebere vsebina za shranjevanje (vir besedila).
+  let _ssActiveSourceId = 'slikajBesedilo';
 
   function _ssReset() {
     _ssSola = null; _ssRazred = null; _ssPredmetId = null; _ssTemaId = null;
@@ -4303,7 +4380,8 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
   }
 
   function ssShrani() {
-    const vsebina = document.getElementById('slikajBesedilo').value.trim();
+    const srcEl = document.getElementById(_ssActiveSourceId) || document.getElementById('slikajBesedilo');
+    const vsebina = (srcEl ? srcEl.value : '').trim();
     if (!vsebina) { alert('Besedilo je prazno.'); return; }
     const naslov = document.getElementById('ssNaslovInput').value.trim() || vsebina.slice(0, 50);
     const data = getSnovData();
@@ -4320,6 +4398,229 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     setSnovData(data);
     ssZapri();
     alert('Besedilo je shranjeno v šolsko snov! ✅');
+  }
+
+  // ══════════════════════════════════════════════
+  // ── Naloži datoteko (PDF / DOCX / slika) ──
+  // ══════════════════════════════════════════════
+
+  // Sporočilo o napredku v okvirčku z vrtilnikom.
+  function _naloziSporocilo(txt) {
+    const el = document.getElementById('naloziLoadingTxt');
+    if (el) el.textContent = txt;
+  }
+  function _naloziPokaziNapako(sporocilo) {
+    const errEl = document.getElementById('naloziError');
+    errEl.textContent = sporocilo;
+    errEl.classList.add('visible');
+  }
+  function _naloziPocistiPrikaz() {
+    document.getElementById('naloziResultWrap').style.display = 'none';
+    const errEl = document.getElementById('naloziError');
+    errEl.textContent = '';
+    errEl.classList.remove('visible');
+  }
+  function _naloziPrikaziRezultat(besedilo) {
+    // Z obstoječim čiščenjem odstranimo trojne krativce in markdown oznake.
+    let cisto = besedilo;
+    try { cisto = _stripMarkdown(besedilo); } catch (_) { /* fallback na surovo */ }
+    // Odveč prazne vrstice malo skrčimo.
+    cisto = String(cisto).replace(/\n{3,}/g, '\n\n').trim();
+    document.getElementById('naloziBesedilo').value = cisto;
+    document.getElementById('naloziResultWrap').style.display = 'block';
+  }
+
+  // Branje slike po ISTI poti kot "Slikaj stran": pošljemo base64 in mediaType
+  // funkciji "ai" prek Supabase. Vrne besedilo, ki ga je prebrala AI.
+  async function _naloziPosljiSlikoNaOcr(blob, mediaType) {
+    const base64 = await new Promise(function (resolve, reject) {
+      const r = new FileReader();
+      r.onload = function () {
+        const url = r.result || '';
+        const comma = String(url).indexOf(',');
+        resolve(comma >= 0 ? String(url).substring(comma + 1) : '');
+      };
+      r.onerror = function () { reject(new Error('Branje datoteke ni uspelo.')); };
+      r.readAsDataURL(blob);
+    });
+    if (!base64) throw new Error('Datoteka je prazna ali poškodovana.');
+
+    const resp = await fetch(SUPABASE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ slika: base64, mediaType: mediaType || 'image/jpeg' }),
+    });
+    if (!resp.ok) {
+      const txt = await resp.text().catch(() => '');
+      throw new Error('Strežnik je vrnil napako ' + resp.status + (txt ? ': ' + txt : ''));
+    }
+    const data = await resp.json();
+    let rezultat = data.rezultat || data.result || data.odgovor || '';
+    if (!rezultat) {
+      const raw = data.text || data.content || '';
+      if (Array.isArray(raw)) {
+        rezultat = raw.filter(b => b && b.type === 'text').map(b => b.text).join('\n');
+      } else {
+        rezultat = raw;
+      }
+    }
+    return (rezultat || '').toString();
+  }
+
+  // DOCX → besedilo prek Mammoth.js (extractRawText na ArrayBuffer).
+  async function _naloziPreberiDocx(file) {
+    if (typeof window.mammoth === 'undefined' || !window.mammoth.extractRawText) {
+      throw new Error('Knjižnica za branje Word datotek ni naložena. Preveri internetno povezavo.');
+    }
+    const ab = await file.arrayBuffer();
+    if (!ab || ab.byteLength === 0) throw new Error('Datoteka je prazna ali poškodovana.');
+    const res = await window.mammoth.extractRawText({ arrayBuffer: ab });
+    const txt = (res && res.value) ? String(res.value) : '';
+    return txt;
+  }
+
+  // PDF → besedilo prek PDF.js. Za vsako stran najprej poskusi izluščiti
+  // pravo besedilo; če ga ni (skeniran PDF), stran upodobi na canvas in jo
+  // pošlje na OCR po isti poti kot "Slikaj stran".
+  async function _naloziPreberiPdf(file) {
+    if (typeof window.pdfjsLib === 'undefined' || !window.pdfjsLib.getDocument) {
+      throw new Error('Knjižnica za branje PDF datotek ni naložena. Preveri internetno povezavo.');
+    }
+    const ab = await file.arrayBuffer();
+    if (!ab || ab.byteLength === 0) throw new Error('Datoteka je prazna ali poškodovana.');
+
+    let doc;
+    try {
+      doc = await window.pdfjsLib.getDocument({ data: ab }).promise;
+    } catch (e) {
+      throw new Error('PDF datoteke ni bilo mogoče odpreti. Morda je poškodovana.');
+    }
+    const stStrani = doc.numPages || 0;
+    if (!stStrani) throw new Error('PDF nima nobene strani.');
+
+    if (stStrani > 15) {
+      _naloziSporocilo('PDF ima ' + stStrani + ' strani – obdelava bo trajala dlje. Prosim, počakaj …');
+      // Kratka pavza, da uporabnik opazi sporočilo, preden se začne branje.
+      await new Promise(r => setTimeout(r, 600));
+    }
+
+    const stranBesedila = [];
+    for (let i = 1; i <= stStrani; i++) {
+      _naloziSporocilo('Berem stran ' + i + ' od ' + stStrani + ' …');
+      let stranTxt = '';
+      try {
+        const stran = await doc.getPage(i);
+        const txtVsebina = await stran.getTextContent();
+        if (txtVsebina && Array.isArray(txtVsebina.items)) {
+          stranTxt = txtVsebina.items.map(it => (it && it.str) ? it.str : '').join(' ');
+          stranTxt = stranTxt.replace(/\s+/g, ' ').trim();
+        }
+
+        // Heuristika: če stran nima "uporabnega" besedila (skenirani PDF),
+        // jo upodobimo na canvas in pošljemo na OCR po isti poti kot "Slikaj stran".
+        if (stranTxt.length < 20) {
+          _naloziSporocilo('Berem stran ' + i + ' od ' + stStrani + ' (skenirana – pošiljam na OCR) …');
+          const skala = 2.0;
+          const viewport = stran.getViewport({ scale: skala });
+          const canvas = document.createElement('canvas');
+          canvas.width  = Math.ceil(viewport.width);
+          canvas.height = Math.ceil(viewport.height);
+          const ctx = canvas.getContext('2d');
+          await stran.render({ canvasContext: ctx, viewport: viewport }).promise;
+          const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
+          if (blob) {
+            try {
+              const ocr = await _naloziPosljiSlikoNaOcr(blob, 'image/jpeg');
+              if (ocr && ocr.trim()) stranTxt = ocr.trim();
+            } catch (ocrErr) {
+              // Če OCR za eno stran ne uspe, jo preskočimo, ne pa prekinemo cel postopek.
+              stranTxt = stranTxt || '';
+            }
+          }
+        }
+      } catch (e) {
+        // Posamezna stran ni mogla biti prebrana – nadaljujemo z naslednjo.
+        stranTxt = stranTxt || '';
+      }
+      stranBesedila.push(stranTxt);
+    }
+    return stranBesedila.filter(Boolean).join('\n\n');
+  }
+
+  // Glavna pot za gumb "Naloži datoteko".
+  async function handleNaloziFile(event) {
+    const file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+
+    _naloziPocistiPrikaz();
+    ssZapri();
+
+    if (!file.size) {
+      _naloziPokaziNapako('Datoteka je prazna. Izberi drugo datoteko.');
+      return;
+    }
+
+    const ime = (file.name || '').toLowerCase();
+    const tip = (file.type || '').toLowerCase();
+    const jeSlika = tip.startsWith('image/')
+      || ime.endsWith('.jpg') || ime.endsWith('.jpeg') || ime.endsWith('.png');
+    const jeDocx  = ime.endsWith('.docx')
+      || tip === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    const jePdf   = ime.endsWith('.pdf') || tip === 'application/pdf';
+
+    if (!jeSlika && !jeDocx && !jePdf) {
+      _naloziPokaziNapako('Nepodprta vrsta datoteke. Sprejete vrste so: PDF, DOCX, JPG, JPEG in PNG.');
+      return;
+    }
+
+    _naloziSporocilo('Berem datoteko …');
+    document.getElementById('naloziLoading').classList.add('visible');
+
+    try {
+      let besedilo = '';
+      if (jeSlika) {
+        _naloziSporocilo('Berem sliko in luščim besedilo …');
+        besedilo = await _naloziPosljiSlikoNaOcr(file, tip || 'image/jpeg');
+      } else if (jeDocx) {
+        _naloziSporocilo('Berem Word datoteko …');
+        besedilo = await _naloziPreberiDocx(file);
+      } else if (jePdf) {
+        _naloziSporocilo('Odpiram PDF …');
+        besedilo = await _naloziPreberiPdf(file);
+      }
+
+      besedilo = (besedilo || '').toString().trim();
+      if (!besedilo) throw new Error('V datoteki ni bilo mogoče najti berljivega besedila.');
+
+      _naloziPrikaziRezultat(besedilo);
+    } catch (err) {
+      const sporocilo = (err && err.message)
+        ? 'Žal datoteke ni bilo mogoče prebrati: ' + err.message
+        : 'Žal datoteke ni bilo mogoče prebrati. Poskusi z drugo datoteko.';
+      _naloziPokaziNapako(sporocilo);
+    } finally {
+      document.getElementById('naloziLoading').classList.remove('visible');
+    }
+  }
+
+  function naloziOdpriVBralniku() {
+    const txt = document.getElementById('naloziBesedilo').value.trim();
+    if (!txt) return;
+    setReaderText(txt);
+    showScreen('screen-reader');
+  }
+
+  function naloziPokaziSnovDialog() {
+    const txt = document.getElementById('naloziBesedilo').value.trim();
+    if (!txt) { alert('Najprej naloži datoteko in pridobi besedilo.'); return; }
+    _ssActiveSourceId = 'naloziBesedilo';
+    _ssVrniDialogVScreen('screen-nalozi');
+    document.getElementById('slikajSnovDialog').style.display = 'block';
+    ssPokaziKorak(1);
   }
 
   // ══════════════════════════════════════════════
