@@ -2128,6 +2128,11 @@
   // ── Navigation ──
   function showScreen(id) {
     if (id !== 'screen-reader') { stopTTS(); _fokusReset(); }
+    // Ko zapustimo zaslon Razumevanje, vedno ustavi tudi AI branje, da se
+    // zvok ne nadaljuje v ozadju na drugih zaslonih.
+    if (id !== 'screen-razumevanje' && typeof stopAiTTS === 'function') {
+      try { stopAiTTS(); } catch(_) {}
+    }
     if (typeof _dotikZapri === 'function') _dotikZapri();
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
@@ -2357,7 +2362,14 @@
   }
 
   function setReaderText(txt, snovId, snovNaslov) {
+    // Pri vsaki zamenjavi besedila ustavi vse zvoke in počisti predpomnjeni
+    // zvok iz prejšnjega besedila, da naslednje branje uporabi NOVO vsebino.
     stopTTS();
+    _freeTtsAudio();
+    ttsUtteranceText = '';
+    ttsWordTimes = [];
+    ttsHasAlignment = false;
+    if (typeof stopAiTTS === 'function') { try { stopAiTTS(); } catch(_) {} }
     _fokusReset();
     if (typeof _dotikZapri === 'function') _dotikZapri();
     _readerPlainText = txt;
@@ -3053,6 +3065,10 @@
   let ttsBrowserFallback = false;
 
   async function playTTS() {
+    // Pred vsakim začetkom/nadaljevanjem branja ustavi morebitne druge zvoke
+    // (AI branje na Razumevanju, dotik besede), da se posnetki ne prekrivajo.
+    if (typeof stopAiTTS === 'function') { try { stopAiTTS(); } catch(_) {} }
+    if (typeof _dotikStopAudio === 'function') { try { _dotikStopAudio(); } catch(_) {} }
     // Nadaljevanje po premoru – ElevenLabs audio element
     if (ttsState === 'paused' && ttsAudio) {
       _applyPreservesPitch(ttsAudio);
