@@ -2129,6 +2129,16 @@
       border-color: var(--accent-hover);
     }
 
+    /* "Nazaj na domov" v Bralniku in Ponavljanju – enako modro stanje kot drugod */
+    .reader-action-btn.back-home:hover:not(:disabled),
+    .reader-action-btn.back-home:active:not(:disabled),
+    body.dark-theme .reader-action-btn.back-home:hover:not(:disabled),
+    body.dark-theme .reader-action-btn.back-home:active:not(:disabled) {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
     @media (max-width: 560px) {
       .reader-actions { gap: 8px; }
       .reader-action-btn { padding: 10px 14px; font-size: .95rem; }
@@ -2410,7 +2420,7 @@
   <!-- ══════════════ BRALNIK + NASTAVITVE ══════════════ -->
   <div class="screen" id="screen-reader">
     <div class="reader-actions">
-      <button type="button" class="reader-action-btn" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+      <button type="button" class="reader-action-btn back-home" onclick="showScreen('screen-home')">← Nazaj na domov</button>
       <button type="button" class="reader-action-btn" onclick="showScreen('screen-razumevanje')">🧠 Razumevanje</button>
       <button type="button" class="reader-action-btn" onclick="showScreen('screen-ponavljanje')">🔁 Ponavljanje</button>
       <button type="button" class="reader-action-btn" id="btnFokus" aria-pressed="false" onclick="toggleFokus()">🔍 Fokus</button>
@@ -2603,7 +2613,7 @@
   <!-- ══════════════ PONAVLJANJE ══════════════ -->
   <div class="screen" id="screen-ponavljanje">
     <div class="reader-actions">
-      <button type="button" class="reader-action-btn" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+      <button type="button" class="reader-action-btn back-home" onclick="showScreen('screen-home')">← Nazaj na domov</button>
       <button type="button" class="reader-action-btn" onclick="showScreen('screen-reader')">📖 Bralnik</button>
     </div>
 
