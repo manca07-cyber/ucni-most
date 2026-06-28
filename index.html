@@ -2111,7 +2111,16 @@
 <script>
   // ── Navigation ──
   function showScreen(id) {
+    // Ko zapustimo bralnik, ustavi branje na glas (audio.pause + ponastavitev).
     if (id !== 'screen-reader') { stopTTS(); _fokusReset(); }
+    // Ko zapustimo zaslon Razumevanje, ustavi posnetek AI rezultata –
+    // sicer bi se zvok nadaljeval v ozadju in se prekrival z bralnikom.
+    if (id !== 'screen-razumevanje') {
+      try { if (typeof stopAiTTS === 'function') stopAiTTS(); } catch (_) {}
+    }
+    // Pri vsaki navigaciji ustavi tudi morebitno predvajanje branja besede
+    // (dotik besede), ki je vezano na trenutni bralnik.
+    try { if (typeof _dotikStopAudio === 'function') _dotikStopAudio(); } catch (_) {}
     if (typeof _dotikZapri === 'function') _dotikZapri();
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
@@ -2342,6 +2351,17 @@
 
   function setReaderText(txt, snovId, snovNaslov) {
     stopTTS();
+    // Novo besedilo → sprosti morebitni predpomnjeni zvok in pripis besed za
+    // STARO besedilo, sicer bi naslednji "Predvajaj" zavrtel star posnetek
+    // (npr. uporabnik odpre "Vinilka", a sliši prej poslušani "Krebsov ciklus").
+    _freeTtsAudio();
+    ttsWordTimes = [];
+    ttsCurrentWordIdx = -1;
+    ttsHasAlignment = false;
+    ttsBrowserFallback = false;
+    // Posnetek branja AI rezultata (povzetek / poenostavi …) je vezan na star
+    // kontekst – ob menjavi besedila ga ustavimo, da se ne nadaljuje v ozadju.
+    try { if (typeof stopAiTTS === 'function') stopAiTTS(); } catch (_) {}
     _fokusReset();
     if (typeof _dotikZapri === 'function') _dotikZapri();
     _readerPlainText = txt;
@@ -3068,6 +3088,11 @@
     if (ttsState === 'playing' || ttsState === 'loading') return;
     if (!ttsUtteranceText) { alert('V bralniku ni besedila za branje.'); return; }
 
+    // Pri zagonu novega branja najprej ustavi morebitno prejšnje predvajanje
+    // (AI TTS / dotik besede), da se dva posnetka ne prekrivata.
+    try { if (typeof stopAiTTS === 'function') stopAiTTS(); } catch (_) {}
+    try { if (typeof _dotikStopAudio === 'function') _dotikStopAudio(); } catch (_) {}
+
     ttsBrowserFallback = false;
     ttsAbort = new AbortController();
     ttsState = 'loading';
@@ -3109,6 +3134,9 @@
       updateTTSButtons();
     } catch (err) {
       if (err.name === 'AbortError') { ttsState = 'stopped'; updateTTSButtons(); return; }
+      // Če je uporabnik medtem zapustil bralnik (ali pritisnil Ustavi), ne
+      // zaganjaj brskalniške rezerve – sicer bi zvok zaživel v ozadju.
+      if (ttsState !== 'loading') { updateTTSButtons(); return; }
       // Rezerva – brskalnikov glas
       console.warn('ElevenLabs TTS ni uspel, preklop na brskalnik:', err);
       ttsBrowserFallback = true;
@@ -3307,6 +3335,11 @@
     const txt = document.getElementById('aiResultBox').textContent.trim();
     if (!txt) return;
     if (aiTtsState === 'playing' || aiTtsState === 'loading') return;
+
+    // Pri zagonu novega branja najprej ustavi predvajanje bralnika / dotika,
+    // da se dva posnetka ne prekrivata.
+    try { stopTTS(); } catch (_) {}
+    try { if (typeof _dotikStopAudio === 'function') _dotikStopAudio(); } catch (_) {}
 
     aiTtsAbort = new AbortController();
     aiTtsState = 'loading';
