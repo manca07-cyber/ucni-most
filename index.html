@@ -669,6 +669,27 @@
       word-wrap: break-word;
     }
 
+    /* ── Predogled nastavitev besedila ── */
+    .reader-preview-wrap {
+      margin-bottom: 28px;
+    }
+    .reader-preview-title {
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 8px;
+      padding-left: 4px;
+    }
+    body.dark-theme .reader-preview-title { color: #b8b8c8; }
+    .reader-box.reader-preview {
+      padding: 18px 22px;
+    }
+    .reader-box.reader-preview p {
+      margin: 0;
+    }
+
     /* ── Dark theme overrides ── */
     body.dark-theme {
       --panel: #2a2a40;
@@ -1953,6 +1974,14 @@
       </div>
     </div>
 
+    <!-- Predogled nastavitev besedila (živo se spreminja ob premikanju drsnikov) -->
+    <div class="reader-preview-wrap">
+      <div class="reader-preview-title">Predogled</div>
+      <div class="reader-box reader-preview" id="readerPreview" aria-live="polite">
+        <p>Tako bo videti besedilo, ki ga boš bral. Spremembe nastavitev se pokažejo tukaj v živo.</p>
+      </div>
+    </div>
+
     <!-- ══ Branje na glas ══ -->
     <div class="tts-panel">
       <div class="panel-title">Branje na glas</div>
@@ -2454,33 +2483,40 @@
 
   let state = { color: 'white', intensity: 'medium' };
 
+  // Vsa besedila, ki morajo upoštevati nastavitve (bralnik + predogled).
+  function _readerTargets() {
+    return [
+      document.getElementById('readerBox'),
+      document.getElementById('readerPreview'),
+    ].filter(Boolean);
+  }
+
   // ── Font ──
   document.getElementById('fontPicker').addEventListener('change', function () {
     document.documentElement.style.setProperty('--font', this.value);
-    document.getElementById('readerBox').style.fontFamily = this.value;
+    _readerTargets().forEach(el => { el.style.fontFamily = this.value; });
   });
 
   // ── Sliders ──
   document.getElementById('fsSlider').addEventListener('input', function () {
     document.getElementById('fsVal').textContent = this.value + 'px';
-    document.getElementById('readerBox').style.fontSize = this.value + 'px';
+    _readerTargets().forEach(el => { el.style.fontSize = this.value + 'px'; });
   });
   document.getElementById('lhSlider').addEventListener('input', function () {
     const v = parseFloat(this.value).toFixed(1);
     document.getElementById('lhVal').textContent = v;
-    document.getElementById('readerBox').style.lineHeight = v;
+    _readerTargets().forEach(el => { el.style.lineHeight = v; });
   });
   document.getElementById('lsSlider').addEventListener('input', function () {
     const v = parseFloat(this.value).toFixed(2);
     document.getElementById('lsVal').textContent = v + 'em';
-    document.getElementById('readerBox').style.letterSpacing = v + 'em';
+    _readerTargets().forEach(el => { el.style.letterSpacing = v + 'em'; });
   });
 
   // ── Velike tiskane črke (samo vizualno; izvorno besedilo se ne spremeni) ──
   const UPPERCASE_KEY = 'ucni_most_uppercase';
   function _applyUppercase(on) {
-    const box = document.getElementById('readerBox');
-    if (box) box.classList.toggle('uppercase-on', !!on);
+    _readerTargets().forEach(el => el.classList.toggle('uppercase-on', !!on));
     const lbl = document.getElementById('uppercaseLabel');
     if (lbl) lbl.textContent = on ? 'vklopljeno' : 'izklopljeno';
   }
@@ -2502,10 +2538,11 @@
     const bg = PALETTES[state.color][state.intensity];
     const fg = TEXT_COLORS[state.color];
     document.body.style.background = bg;
-    const box = document.getElementById('readerBox');
-    box.style.background = bg;
-    box.style.color = fg;
-    box.style.borderColor = state.color === 'dark' ? '#444' : '#ddd';
+    _readerTargets().forEach(box => {
+      box.style.background = bg;
+      box.style.color = fg;
+      box.style.borderColor = state.color === 'dark' ? '#444' : '#ddd';
+    });
     document.body.classList.toggle('dark-theme', state.color === 'dark');
 
     const hl = HIGHLIGHT_COLORS[state.color] || HIGHLIGHT_COLORS.white;
