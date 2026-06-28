@@ -2066,6 +2066,123 @@
       .reader-actions { gap: 8px; }
       .reader-action-btn { padding: 10px 14px; font-size: .95rem; }
     }
+
+    /* ── Lastna modalna okna (nadomestek prompt/confirm/alert) ── */
+    .um-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26,26,46,.42);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 20px;
+      opacity: 0;
+      transition: opacity .18s ease;
+      -webkit-backdrop-filter: blur(2px);
+      backdrop-filter: blur(2px);
+    }
+    .um-modal-overlay.um-visible { opacity: 1; }
+    .um-modal {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 14px 44px rgba(0,0,0,.22);
+      max-width: 460px;
+      width: 100%;
+      padding: 26px 26px 22px;
+      font-family: var(--font);
+      color: var(--text);
+      transform: translateY(8px) scale(.98);
+      transition: transform .18s ease;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    .um-modal-overlay.um-visible .um-modal { transform: translateY(0) scale(1); }
+    .um-modal-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 12px;
+      line-height: 1.35;
+    }
+    .um-modal-msg {
+      font-size: 1rem;
+      line-height: 1.55;
+      margin-bottom: 18px;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+    .um-modal-msg:last-child { margin-bottom: 22px; }
+    .um-modal-input {
+      width: 100%;
+      padding: 14px 16px;
+      font-family: inherit;
+      font-size: 1.05rem;
+      border: 2px solid #ccc;
+      border-radius: 12px;
+      background: #fff;
+      color: var(--text);
+      transition: border-color .2s;
+      margin-bottom: 18px;
+    }
+    .um-modal-input:focus { outline: none; border-color: var(--accent); }
+    .um-modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+    .um-modal-btn {
+      padding: 12px 24px;
+      border-radius: 30px;
+      border: 2px solid var(--accent);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      min-height: 48px;
+      min-width: 110px;
+      transition: background .2s, color .2s, transform .1s, border-color .2s;
+    }
+    .um-modal-btn:hover { transform: translateY(-1px); }
+    .um-modal-btn.um-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .um-modal-btn.um-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .um-modal-btn.um-secondary {
+      background: none;
+      color: var(--accent);
+    }
+    .um-modal-btn.um-secondary:hover { background: var(--accent); color: #fff; }
+    .um-modal-btn.um-danger {
+      background: #c0392b;
+      border-color: #c0392b;
+      color: #fff;
+    }
+    .um-modal-btn.um-danger:hover { background: #a52e21; border-color: #a52e21; }
+    .um-modal-btn:focus-visible {
+      outline: 3px solid rgba(74,126,207,.45);
+      outline-offset: 2px;
+    }
+
+    body.dark-theme .um-modal { background: #2a2a40; color: #e8e8f0; }
+    body.dark-theme .um-modal-msg { color: #e8e8f0; }
+    body.dark-theme .um-modal-input { background: #1a1a2e; color: #e8e8f0; border-color: #444; }
+    body.dark-theme .um-modal-overlay { background: rgba(0,0,0,.55); }
+
+    @media (max-width: 520px) {
+      .um-modal-overlay { padding: 14px; }
+      .um-modal { padding: 22px 18px 18px; border-radius: 16px; }
+      .um-modal-title { font-size: 1.1rem; }
+      .um-modal-actions { gap: 8px; }
+      .um-modal-btn {
+        flex: 1 1 auto;
+        min-width: 0;
+        padding: 14px 14px;
+        font-size: 1rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -2750,6 +2867,9 @@
   <button class="fokus-nav-btn" id="fokusNavNaprej" onclick="fokusNaprej()">Naprej →</button>
 </div>
 
+<!-- Korenski element za lastna modalna okna (nadomestek prompt/confirm/alert) -->
+<div id="umModalRoot" aria-live="polite"></div>
+
 <!-- Knjižnici za branje .docx (Mammoth.js) in .pdf (PDF.js) – iz cdnjs -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -2761,6 +2881,179 @@
 </script>
 
 <script>
+  // ══════════════════════════════════════════════
+  // ── Lastna modalna okna (nadomestek prompt/confirm/alert) ──
+  // ══════════════════════════════════════════════
+  // Vrnejo Promise; klicna koda uporabi await ali .then.
+  //   uiAlert(message, opts?)     → Promise<void>
+  //   uiConfirm({title, message, confirmText, cancelText, danger}) → Promise<boolean>
+  //   uiPrompt({title, message?, defaultValue?, placeholder?, confirmText?, cancelText?})
+  //                                → Promise<string|null>  (null = preklic)
+  const _UM_MODAL_STACK = [];
+
+  function _umBuildModal(kind, opts) {
+    return new Promise(function (resolve) {
+      const root = document.getElementById('umModalRoot') || document.body;
+      const overlay = document.createElement('div');
+      overlay.className = 'um-modal-overlay';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+
+      const modal = document.createElement('div');
+      modal.className = 'um-modal';
+      overlay.appendChild(modal);
+
+      // Naslov
+      const title = (opts && opts.title) || '';
+      if (title) {
+        const h = document.createElement('div');
+        h.className = 'um-modal-title';
+        h.textContent = title;
+        modal.appendChild(h);
+        overlay.setAttribute('aria-labelledby', '');
+      }
+
+      // Sporočilo / vprašanje
+      const message = (opts && opts.message) || '';
+      if (message) {
+        const m = document.createElement('div');
+        m.className = 'um-modal-msg';
+        m.textContent = message;
+        modal.appendChild(m);
+      }
+
+      // Vnosno polje (samo pri prompt)
+      let input = null;
+      if (kind === 'prompt') {
+        input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'um-modal-input';
+        input.value = (opts && opts.defaultValue != null) ? String(opts.defaultValue) : '';
+        if (opts && opts.placeholder) input.placeholder = String(opts.placeholder);
+        input.autocomplete = 'off';
+        input.spellcheck = false;
+        modal.appendChild(input);
+      }
+
+      // Gumbi
+      const actions = document.createElement('div');
+      actions.className = 'um-modal-actions';
+
+      let cancelBtn = null;
+      if (kind === 'confirm' || kind === 'prompt') {
+        cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'um-modal-btn um-secondary';
+        cancelBtn.textContent = (opts && opts.cancelText) || 'Prekliči';
+        actions.appendChild(cancelBtn);
+      }
+
+      const confirmBtn = document.createElement('button');
+      confirmBtn.type = 'button';
+      let confirmClass = 'um-modal-btn um-primary';
+      if (opts && opts.danger) confirmClass = 'um-modal-btn um-danger';
+      confirmBtn.className = confirmClass;
+      if (kind === 'alert') {
+        confirmBtn.textContent = (opts && opts.confirmText) || 'V redu';
+      } else if (kind === 'confirm') {
+        confirmBtn.textContent = (opts && opts.confirmText) || 'Potrdi';
+      } else {
+        confirmBtn.textContent = (opts && opts.confirmText) || 'Shrani';
+      }
+      actions.appendChild(confirmBtn);
+      modal.appendChild(actions);
+
+      root.appendChild(overlay);
+      // Vsiljen reflow, da se opacity tranzicija sproži.
+      // eslint-disable-next-line no-unused-expressions
+      overlay.offsetHeight;
+      overlay.classList.add('um-visible');
+
+      // Shrani prejšnji aktivni element, da fokus vrnemo po zaprtju.
+      const prevActive = document.activeElement;
+      _UM_MODAL_STACK.push(overlay);
+
+      let closed = false;
+      function close(result) {
+        if (closed) return;
+        closed = true;
+        overlay.classList.remove('um-visible');
+        document.removeEventListener('keydown', onKey, true);
+        const idx = _UM_MODAL_STACK.indexOf(overlay);
+        if (idx >= 0) _UM_MODAL_STACK.splice(idx, 1);
+        setTimeout(function () {
+          if (overlay.parentElement) overlay.parentElement.removeChild(overlay);
+          try { if (prevActive && prevActive.focus) prevActive.focus(); } catch (_) {}
+        }, 180);
+        resolve(result);
+      }
+
+      function onConfirm() {
+        if (kind === 'prompt') {
+          close(input.value);
+        } else if (kind === 'confirm') {
+          close(true);
+        } else {
+          close();
+        }
+      }
+      function onCancel() {
+        if (kind === 'prompt') close(null);
+        else if (kind === 'confirm') close(false);
+        else close();
+      }
+
+      confirmBtn.addEventListener('click', onConfirm);
+      if (cancelBtn) cancelBtn.addEventListener('click', onCancel);
+
+      function onKey(e) {
+        // Obravnavamo samo dogodke za najgornje modalno okno.
+        if (_UM_MODAL_STACK[_UM_MODAL_STACK.length - 1] !== overlay) return;
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          onCancel();
+        } else if (e.key === 'Enter') {
+          // Pri promptu Enter potrdi; pri confirm/alert prav tako.
+          // V večvrstičnem inputu to ni problem (uporabljamo enovrstični input).
+          if (kind === 'prompt' && e.target !== input) return;
+          e.preventDefault();
+          e.stopPropagation();
+          onConfirm();
+        }
+      }
+      document.addEventListener('keydown', onKey, true);
+
+      // Začetni fokus
+      setTimeout(function () {
+        try {
+          if (input) {
+            input.focus();
+            // Pri urejanju (privzeta vrednost) izberi vse, da je lažje brisanje/zamenjava.
+            try { input.select(); } catch (_) {}
+          } else {
+            confirmBtn.focus();
+          }
+        } catch (_) {}
+      }, 30);
+    });
+  }
+
+  function uiAlert(message, opts) {
+    const o = Object.assign({}, opts || {});
+    if (typeof message === 'string') o.message = message;
+    else if (message && typeof message === 'object') Object.assign(o, message);
+    return _umBuildModal('alert', o);
+  }
+  function uiConfirm(opts) {
+    if (typeof opts === 'string') opts = { message: opts };
+    return _umBuildModal('confirm', opts || {});
+  }
+  function uiPrompt(opts) {
+    if (typeof opts === 'string') opts = { title: opts };
+    return _umBuildModal('prompt', opts || {});
+  }
+
   // ── Navigation ──
   function showScreen(id) {
     if (id !== 'screen-reader') { stopTTS(); _fokusReset(); }
@@ -3196,7 +3489,7 @@
   }
 
   async function toggleZlogi() {
-    if (!_readerPlainText) { alert('V bralniku ni besedila.'); return; }
+    if (!_readerPlainText) { await uiAlert('V bralniku ni besedila.'); return; }
     if (_zlogiLoading) return;
 
     // Izklop
@@ -3222,7 +3515,7 @@
       _zlogiAnnotated = await _fetchZlogi(_readerPlainText);
       _zlogiAktiven = true;
     } catch (err) {
-      alert('Napaka pri nalaganju zlogov: ' + err.message);
+      await uiAlert({ title: 'Napaka pri nalaganju zlogov', message: err.message });
     } finally {
       _zlogiLoading = false;
       _updateZlogiBtn();
@@ -3336,8 +3629,13 @@
     if (_aktivnoSnovBesediloId === null || _aktivnoSnovBesediloId === undefined) return;
     if (napredekJePrebrano(_aktivnoSnovBesediloId)) return;
     _napredekObvescenoOPredvajanju = true;
-    setTimeout(() => {
-      const ok = confirm('Bravo, poslušal si besedilo do konca! Naj ga označim kot prebrano? 🌟');
+    setTimeout(async () => {
+      const ok = await uiConfirm({
+        title: 'Bravo! 🌟',
+        message: 'Poslušal si besedilo do konca! Naj ga označim kot prebrano?',
+        confirmText: 'Označi kot prebrano',
+        cancelText: 'Ne zdaj',
+      });
       if (ok) {
         napredekOznaciPrebrano(_aktivnoSnovBesediloId, _aktivnoSnovBesediloNaslov);
         _posodobiPrebranoBtn();
@@ -3425,8 +3723,14 @@
     });
   }
 
-  function napredekPonastavi() {
-    const ok = confirm('Si prepričan, da želiš ponastaviti napredek?\nIzbrisali bomo seznam prebranih besedil in števec ponavljanj.\n(Druga besedila in nastavitve ostanejo.)');
+  async function napredekPonastavi() {
+    const ok = await uiConfirm({
+      title: 'Ponastavi napredek?',
+      message: 'Izbrisali bomo seznam prebranih besedil in števec ponavljanj.\n(Druga besedila in nastavitve ostanejo.)',
+      confirmText: 'Ponastavi',
+      cancelText: 'Prekliči',
+      danger: true,
+    });
     if (!ok) return;
     setNapredek({ prebrana: [], ponavljanja: 0 });
     _posodobiPrebranoBtn();
@@ -3442,7 +3746,7 @@
     localStorage.setItem('ucni_most_texts', JSON.stringify(arr));
   }
 
-  function savePastedText() {
+  async function savePastedText() {
     const txt = document.getElementById('pasteArea').value.trim();
     if (!txt) return;
     const saved = getSaved();
@@ -3454,7 +3758,7 @@
     });
     setSaved(saved);
     document.getElementById('pasteArea').value = '';
-    alert('Besedilo shranjeno!');
+    await uiAlert('Besedilo shranjeno!');
   }
 
   function renderSavedList() {
@@ -3788,7 +4092,7 @@
       return;
     }
     if (ttsState === 'playing' || ttsState === 'loading') return;
-    if (!ttsUtteranceText) { alert('V bralniku ni besedila za branje.'); return; }
+    if (!ttsUtteranceText) { await uiAlert('V bralniku ni besedila za branje.'); return; }
 
     ttsBrowserFallback = false;
     ttsAbort = new AbortController();
@@ -4624,8 +4928,14 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     });
   }
 
-  function snovDodajPredmet() {
-    const ime = prompt('Vnesite ime novega predmeta:');
+  async function snovDodajPredmet() {
+    const ime = await uiPrompt({
+      title: 'Dodaj predmet',
+      message: 'Vnesite ime novega predmeta:',
+      placeholder: 'npr. Slovenščina',
+      confirmText: 'Shrani',
+      cancelText: 'Prekliči',
+    });
     if (!ime || !ime.trim()) return;
     const data = getSnovData();
     data[snovAktivnaSola][snovAktivniRazred].predmeti.push({ id: Date.now(), ime: ime.trim(), teme: [] });
@@ -4633,19 +4943,32 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     renderSnovPredmeti();
   }
 
-  function snovPreimenujPredmet(id) {
+  async function snovPreimenujPredmet(id) {
     const data = getSnovData();
     const p = data[snovAktivnaSola][snovAktivniRazred].predmeti.find(x => x.id === id);
     if (!p) return;
-    const novoIme = prompt('Novo ime predmeta:', p.ime);
+    const novoIme = await uiPrompt({
+      title: 'Preimenuj predmet',
+      message: 'Novo ime predmeta:',
+      defaultValue: p.ime,
+      confirmText: 'Shrani',
+      cancelText: 'Prekliči',
+    });
     if (!novoIme || !novoIme.trim()) return;
     p.ime = novoIme.trim();
     setSnovData(data);
     renderSnovPredmeti();
   }
 
-  function snovIzbrisiPredmet(id) {
-    if (!confirm('Ali res želite izbrisati ta predmet in vse teme ter besedila v njem?')) return;
+  async function snovIzbrisiPredmet(id) {
+    const ok = await uiConfirm({
+      title: 'Izbriši predmet?',
+      message: 'Ali res želite izbrisati ta predmet in vse teme ter besedila v njem?',
+      confirmText: 'Izbriši',
+      cancelText: 'Prekliči',
+      danger: true,
+    });
+    if (!ok) return;
     const data = getSnovData();
     data[snovAktivnaSola][snovAktivniRazred].predmeti =
       data[snovAktivnaSola][snovAktivniRazred].predmeti.filter(x => x.id !== id);
@@ -4703,8 +5026,14 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     });
   }
 
-  function snovDodajTemo() {
-    const ime = prompt('Vnesite ime nove teme (npr. Rimljani, Fotosinteza …):');
+  async function snovDodajTemo() {
+    const ime = await uiPrompt({
+      title: 'Dodaj temo',
+      message: 'Vnesite ime nove teme (npr. Rimljani, Fotosinteza …):',
+      placeholder: 'Ime teme',
+      confirmText: 'Shrani',
+      cancelText: 'Prekliči',
+    });
     if (!ime || !ime.trim()) return;
     const data    = getSnovData();
     const predmet = _snovGetPredmet(data);
@@ -4715,21 +5044,34 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     renderSnovTeme();
   }
 
-  function snovPreimenujTemo(id) {
+  async function snovPreimenujTemo(id) {
     const data    = getSnovData();
     const predmet = _snovGetPredmet(data);
     if (!predmet) return;
     const t = predmet.teme.find(x => x.id === id);
     if (!t) return;
-    const novoIme = prompt('Novo ime teme:', t.ime);
+    const novoIme = await uiPrompt({
+      title: 'Preimenuj temo',
+      message: 'Novo ime teme:',
+      defaultValue: t.ime,
+      confirmText: 'Shrani',
+      cancelText: 'Prekliči',
+    });
     if (!novoIme || !novoIme.trim()) return;
     t.ime = novoIme.trim();
     setSnovData(data);
     renderSnovTeme();
   }
 
-  function snovIzbrisiTemo(id) {
-    if (!confirm('Ali res želite izbrisati to temo in vsa besedila v njej?')) return;
+  async function snovIzbrisiTemo(id) {
+    const ok = await uiConfirm({
+      title: 'Izbriši temo?',
+      message: 'Ali res želite izbrisati to temo in vsa besedila v njej?',
+      confirmText: 'Izbriši',
+      cancelText: 'Prekliči',
+      danger: true,
+    });
+    if (!ok) return;
     const data    = getSnovData();
     const predmet = _snovGetPredmet(data);
     if (!predmet) return;
@@ -4816,10 +5158,10 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     }
   }
 
-  function snovShraniBesedilo() {
+  async function snovShraniBesedilo() {
     const naslov  = document.getElementById('snovBesediloNaslov').value.trim();
     const vsebina = document.getElementById('snovBesediloVsebina').value.trim();
-    if (!vsebina) { alert('Besedilo ne sme biti prazno.'); return; }
+    if (!vsebina) { await uiAlert('Besedilo ne sme biti prazno.'); return; }
     const data = getSnovData();
     const tema = _snovGetTema(data);
     if (!tema) return;
@@ -4835,13 +5177,19 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     renderSnovBesedila();
   }
 
-  function snovPreimenujBesedilo(id) {
+  async function snovPreimenujBesedilo(id) {
     const data = getSnovData();
     const tema = _snovGetTema(data);
     if (!tema) return;
     const b = tema.besedila.find(x => x.id === id);
     if (!b) return;
-    const novoIme = prompt('Nov naslov besedila:', b.naslov);
+    const novoIme = await uiPrompt({
+      title: 'Preimenuj besedilo',
+      message: 'Nov naslov besedila:',
+      defaultValue: b.naslov,
+      confirmText: 'Shrani',
+      cancelText: 'Prekliči',
+    });
     if (!novoIme || !novoIme.trim()) return;
     b.naslov = novoIme.trim();
     setSnovData(data);
@@ -4856,8 +5204,15 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     renderSnovBesedila();
   }
 
-  function snovIzbrisiB(id) {
-    if (!confirm('Ali res želite izbrisati to besedilo?')) return;
+  async function snovIzbrisiB(id) {
+    const ok = await uiConfirm({
+      title: 'Izbriši besedilo?',
+      message: 'Ali res želite izbrisati to besedilo?',
+      confirmText: 'Izbriši',
+      cancelText: 'Prekliči',
+      danger: true,
+    });
+    if (!ok) return;
     const data = getSnovData();
     const tema = _snovGetTema(data);
     if (!tema) return;
@@ -4940,9 +5295,9 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     showScreen('screen-reader');
   }
 
-  function slikajPokaziSnovDialog() {
+  async function slikajPokaziSnovDialog() {
     const txt = document.getElementById('slikajBesedilo').value.trim();
-    if (!txt) { alert('Najprej preberi besedilo s slike.'); return; }
+    if (!txt) { await uiAlert('Najprej preberi besedilo s slike.'); return; }
     _ssActiveSourceId = 'slikajBesedilo';
     _ssVrniDialogVScreen('screen-slikaj');
     document.getElementById('slikajSnovDialog').style.display = 'block';
@@ -5052,8 +5407,14 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     ssPokaziKorak(4);
   }
 
-  function ssNovaTema() {
-    const ime = prompt('Ime nove teme (npr. Rimljani, Fotosinteza …):');
+  async function ssNovaTema() {
+    const ime = await uiPrompt({
+      title: 'Nova tema',
+      message: 'Ime nove teme (npr. Rimljani, Fotosinteza …):',
+      placeholder: 'Ime teme',
+      confirmText: 'Shrani',
+      cancelText: 'Prekliči',
+    });
     if (!ime || !ime.trim()) return;
     const data = getSnovData();
     const predmet = (data[_ssSola][_ssRazred].predmeti || []).find(p => p.id === _ssPredmetId);
@@ -5080,15 +5441,15 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     document.getElementById('ssNaslovInput').focus();
   }
 
-  function ssShrani() {
+  async function ssShrani() {
     const srcEl = document.getElementById(_ssActiveSourceId) || document.getElementById('slikajBesedilo');
     const vsebina = (srcEl ? srcEl.value : '').trim();
-    if (!vsebina) { alert('Besedilo je prazno.'); return; }
+    if (!vsebina) { await uiAlert('Besedilo je prazno.'); return; }
     const naslov = document.getElementById('ssNaslovInput').value.trim() || vsebina.slice(0, 50);
     const data = getSnovData();
     const predmet = (data[_ssSola][_ssRazred].predmeti || []).find(p => p.id === _ssPredmetId);
     const tema = (predmet && predmet.teme || []).find(t => t.id === _ssTemaId);
-    if (!tema) { alert('Napaka: tema ni bila najdena.'); return; }
+    if (!tema) { await uiAlert({ title: 'Napaka', message: 'Tema ni bila najdena.' }); return; }
     if (!tema.besedila) tema.besedila = [];
     tema.besedila.unshift({
       id: Date.now(),
@@ -5098,7 +5459,7 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     });
     setSnovData(data);
     ssZapri();
-    alert('Besedilo je shranjeno v šolsko snov! ✅');
+    await uiAlert('Besedilo je shranjeno v šolsko snov! ✅');
   }
 
   // ══════════════════════════════════════════════
@@ -5315,9 +5676,9 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     showScreen('screen-reader');
   }
 
-  function naloziPokaziSnovDialog() {
+  async function naloziPokaziSnovDialog() {
     const txt = document.getElementById('naloziBesedilo').value.trim();
-    if (!txt) { alert('Najprej naloži datoteko in pridobi besedilo.'); return; }
+    if (!txt) { await uiAlert('Najprej naloži datoteko in pridobi besedilo.'); return; }
     _ssActiveSourceId = 'naloziBesedilo';
     _ssVrniDialogVScreen('screen-nalozi');
     document.getElementById('slikajSnovDialog').style.display = 'block';
@@ -5358,8 +5719,8 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
     }
   }
 
-  function aktivirajFokus() {
-    if (!_readerPlainText) { alert('V bralniku ni besedila.'); return; }
+  async function aktivirajFokus() {
+    if (!_readerPlainText) { await uiAlert('V bralniku ni besedila.'); return; }
     stopTTS();
     fokusAktiven = true;
     fokusIndeks  = 0;
