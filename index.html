@@ -1546,7 +1546,7 @@
   <div class="screen active" id="screen-home">
     <div class="home-grid">
 
-      <button class="home-btn primary" onclick="showScreen('screen-paste')">
+      <button class="home-btn secondary" onclick="showScreen('screen-paste')">
         <span class="btn-icon">📋</span>
         Prilepi besedilo
       </button>
@@ -1682,6 +1682,9 @@
         <button class="color-btn"        data-color="yellow"   title="Nežno rumena"   style="background:#fffde7;"></button>
         <button class="color-btn"        data-color="green"    title="Nežno zelena"   style="background:#e8f5e9;"></button>
         <button class="color-btn"        data-color="pink"     title="Bledo roza"     style="background:#fce4ec;"></button>
+        <button class="color-btn"        data-color="lavender" title="Nežno vijolična" style="background:#ece4f7;"></button>
+        <button class="color-btn"        data-color="peach"    title="Mehka breskova"  style="background:#ffe5d4;"></button>
+        <button class="color-btn"        data-color="mint"     title="Nežna mint zelena" style="background:#dff5ec;"></button>
         <button class="color-btn"        data-color="gray"     title="Siva"           style="background:#eeeeee;"></button>
         <button class="color-btn"        data-color="dark"     title="Temna"          style="background:#1a1a2e;"></button>
       </div>
@@ -1765,7 +1768,7 @@
       <!-- Loading -->
       <div class="ai-loading" id="aiLoading">
         <div class="spinner"></div>
-        <span>Umetna inteligenca razmišlja … počakaj trenutek.</span>
+        <span>Pripravljam …</span>
       </div>
 
       <!-- Error -->
@@ -1906,6 +1909,7 @@
           <textarea id="snovBesediloVsebina" class="paste-area" style="margin-bottom:12px;" placeholder="Sem prilepi ali vtipkaj besedilo …"></textarea>
           <div class="action-row">
             <button class="btn-primary" onclick="snovShraniBesedilo()">Shrani</button>
+            <button class="btn-secondary" onclick="(function(){var n=document.getElementById('snovBesediloNaslov');var v=document.getElementById('snovBesediloVsebina');n.value='';v.value='';v.focus();})()">Briši</button>
             <button class="btn-secondary" onclick="snovToggleVnosBesedila(false)">Prekliči</button>
           </div>
         </div>
@@ -1957,6 +1961,7 @@
         <div class="action-row" style="margin-top:16px;">
           <button class="btn-primary" onclick="slikajOdpriVBralniku()">📖 Odpri v bralniku</button>
           <button class="btn-secondary" onclick="slikajPokaziSnovDialog()">🎒 Shrani v šolsko snov</button>
+          <button class="btn-secondary" onclick="(function(){var a=document.getElementById('slikajBesedilo');a.value='';a.focus();})()">Briši</button>
         </div>
       </div>
     </div>
@@ -2005,6 +2010,7 @@
             style="width:100%;padding:12px 14px;font-size:1rem;font-family:inherit;border:2px solid #ccc;border-radius:10px;margin-bottom:16px;background:#fff;color:var(--text);" />
           <div class="action-row">
             <button class="btn-primary" onclick="ssShrani()">💾 Shrani</button>
+            <button class="btn-secondary" onclick="(function(){var i=document.getElementById('ssNaslovInput');i.value='';i.focus();})()">Briši</button>
             <button class="btn-secondary" onclick="ssZapri()">Prekliči</button>
           </div>
         </div>
@@ -2060,6 +2066,7 @@
         <div class="action-row" style="margin-top:16px;">
           <button class="btn-primary" onclick="naloziOdpriVBralniku()">📖 Odpri v bralniku</button>
           <button class="btn-secondary" onclick="naloziPokaziSnovDialog()">🎒 Shrani v šolsko snov</button>
+          <button class="btn-secondary" onclick="(function(){var a=document.getElementById('naloziBesedilo');a.value='';a.focus();})()">Briši</button>
         </div>
       </div>
     </div>
@@ -2158,6 +2165,9 @@
     yellow: { gentle: '#fffef5', medium: '#fffde7', strong: '#fff9c4' },
     green:  { gentle: '#f4fbf4', medium: '#e8f5e9', strong: '#c8e6c9' },
     pink:   { gentle: '#fff5f8', medium: '#fce4ec', strong: '#f8bbd0' },
+    lavender:{ gentle: '#f6f1fc', medium: '#ece4f7', strong: '#d9c8ee' },
+    peach:  { gentle: '#fff3ea', medium: '#ffe5d4', strong: '#fccbac' },
+    mint:   { gentle: '#effaf4', medium: '#dff5ec', strong: '#bfead4' },
     gray:   { gentle: '#f7f7f7', medium: '#eeeeee', strong: '#e0e0e0' },
     dark:   { gentle: '#1a1a2e', medium: '#1a1a2e', strong: '#12121f' },
   };
@@ -2165,6 +2175,7 @@
   const TEXT_COLORS = {
     white: '#1a1a2e', cream: '#2d2a1e', lblue: '#0d2a4a',
     yellow: '#2a2800', green: '#0d2e0d', pink: '#3a0a1e',
+    lavender: '#2a1a4a', peach: '#3a1d00', mint: '#0d2e1f',
     gray: '#1a1a1a', dark: '#e8e8f0',
   };
 
@@ -2178,6 +2189,9 @@
     yellow: { bg: '#a8d4ee', text: '#0a2a45' },
     green:  { bg: '#ffc1a8', text: '#3a1d00' },
     pink:   { bg: '#a9e0c4', text: '#0a3a1f' },
+    lavender:{ bg: '#ffd49a', text: '#3a1d00' },
+    peach:  { bg: '#a9d8ea', text: '#0a2a45' },
+    mint:   { bg: '#ffc8a3', text: '#3a1d00' },
     gray:   { bg: '#ffc89a', text: '#3a1d00' },
     dark:   { bg: '#e6b85a', text: '#1a1a2e' },
   };
