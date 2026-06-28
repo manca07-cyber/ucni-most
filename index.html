@@ -1990,6 +1990,82 @@
       .home-brand-name { font-size: 1.18rem; }
       .home-brand-tag { font-size: .82rem; }
     }
+
+    /* ══════════════════════════════════════════════════════════════
+       Bralnik (in Ponavljanje) – ENOTNI GUMBI V GORNJI VRSTICI
+       Vsi gumbi imajo enak miren videz (mehko obrobljeno, brez
+       močne polne barve), stikala (Fokus, Zlogi, Dotik besede)
+       pa jasno, a umirjeno označijo vklopljeno stanje (.is-on).
+       Bralna vsebina sama ostane nedotaknjena.
+       ══════════════════════════════════════════════════════════════ */
+    .reader-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: stretch;
+      margin-bottom: 28px;
+    }
+    .reader-action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.70);
+      border: 1.5px solid rgba(74, 126, 207, 0.50);
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background .15s, color .15s, border-color .15s, box-shadow .15s, transform .1s;
+      line-height: 1.2;
+      margin: 0;
+      min-height: 44px;
+      max-width: 100%;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .reader-action-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.95);
+      border-color: var(--accent);
+    }
+    .reader-action-btn:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+    .reader-action-btn:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(74, 126, 207, 0.30);
+    }
+    .reader-action-btn.is-on {
+      background: rgba(74, 126, 207, 0.16);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 700;
+      box-shadow: inset 0 0 0 1px var(--accent);
+    }
+    .reader-action-btn:disabled { opacity: .55; cursor: default; }
+
+    body.dark-theme .reader-action-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(140, 180, 230, 0.45);
+      color: #cfe1ff;
+    }
+    body.dark-theme .reader-action-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: #8cb4e6;
+    }
+    body.dark-theme .reader-action-btn.is-on {
+      background: rgba(74, 126, 207, 0.30);
+      border-color: #8cb4e6;
+      color: #ffffff;
+      box-shadow: inset 0 0 0 1px #8cb4e6;
+    }
+
+    @media (max-width: 560px) {
+      .reader-actions { gap: 8px; }
+      .reader-action-btn { padding: 10px 14px; font-size: .95rem; }
+    }
   </style>
 </head>
 <body>
@@ -2155,13 +2231,13 @@
 
   <!-- ══════════════ BRALNIK + NASTAVITVE ══════════════ -->
   <div class="screen" id="screen-reader">
-    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:28px;">
-      <button class="back-btn" style="margin-bottom:0;" onclick="showScreen('screen-home')">← Nazaj na domov</button>
-      <button class="back-btn" style="margin-bottom:0; background:var(--accent); color:#fff; border-color:var(--accent);" onclick="showScreen('screen-razumevanje')">🧠 Razumevanje</button>
-      <button class="back-btn" style="margin-bottom:0; background:#e67e22; color:#fff; border-color:#e67e22;" onclick="showScreen('screen-ponavljanje')">🔁 Ponavljanje</button>
-      <button class="back-btn" id="btnFokus" style="margin-bottom:0;" onclick="toggleFokus()">🔍 Fokus</button>
-      <button class="back-btn" id="btnZlogi" style="margin-bottom:0;" onclick="toggleZlogi()">🎨 Zlogi</button>
-      <button class="back-btn" id="btnDotik" style="margin-bottom:0;" onclick="toggleDotikBesede()">👆 Dotik besede</button>
+    <div class="reader-actions">
+      <button type="button" class="reader-action-btn" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+      <button type="button" class="reader-action-btn" onclick="showScreen('screen-razumevanje')">🧠 Razumevanje</button>
+      <button type="button" class="reader-action-btn" onclick="showScreen('screen-ponavljanje')">🔁 Ponavljanje</button>
+      <button type="button" class="reader-action-btn" id="btnFokus" aria-pressed="false" onclick="toggleFokus()">🔍 Fokus</button>
+      <button type="button" class="reader-action-btn" id="btnZlogi" aria-pressed="false" onclick="toggleZlogi()">🎨 Zlogi</button>
+      <button type="button" class="reader-action-btn" id="btnDotik" aria-pressed="false" onclick="toggleDotikBesede()">👆 Dotik besede</button>
     </div>
 
     <!-- Font & sliders -->
@@ -2348,9 +2424,9 @@
 
   <!-- ══════════════ PONAVLJANJE ══════════════ -->
   <div class="screen" id="screen-ponavljanje">
-    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:28px;">
-      <button class="back-btn" style="margin-bottom:0;" onclick="showScreen('screen-home')">← Nazaj na domov</button>
-      <button class="back-btn" style="margin-bottom:0;" onclick="showScreen('screen-reader')">📖 Bralnik</button>
+    <div class="reader-actions">
+      <button type="button" class="reader-action-btn" onclick="showScreen('screen-home')">← Nazaj na domov</button>
+      <button type="button" class="reader-action-btn" onclick="showScreen('screen-reader')">📖 Bralnik</button>
     </div>
 
     <div class="panel">
@@ -3063,18 +3139,22 @@
   function _updateZlogiBtn() {
     const btn = document.getElementById('btnZlogi');
     if (!btn) return;
+    btn.style.cssText = '';
     if (_zlogiLoading) {
       btn.disabled = true;
       btn.textContent = '🎨 nalagam …';
-      btn.style.cssText = 'margin-bottom:0; opacity:.7; cursor:default;';
+      btn.classList.remove('is-on');
+      btn.setAttribute('aria-pressed', _zlogiAktiven ? 'true' : 'false');
     } else if (_zlogiAktiven) {
       btn.disabled = false;
       btn.textContent = '🎨 Zlogi: VKL';
-      btn.style.cssText = 'margin-bottom:0; background:var(--accent); color:#fff; border-color:var(--accent);';
+      btn.classList.add('is-on');
+      btn.setAttribute('aria-pressed', 'true');
     } else {
       btn.disabled = false;
       btn.textContent = '🎨 Zlogi';
-      btn.style.cssText = 'margin-bottom:0;';
+      btn.classList.remove('is-on');
+      btn.setAttribute('aria-pressed', 'false');
     }
   }
 
@@ -5449,12 +5529,15 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
   function _updateFokusBtn() {
     const btn = document.getElementById('btnFokus');
     if (!btn) return;
+    btn.style.cssText = '';
     if (fokusAktiven) {
       btn.textContent = '🔍 Fokus: VKL';
-      btn.style.cssText = 'margin-bottom:0; background:var(--accent); color:#fff; border-color:var(--accent);';
+      btn.classList.add('is-on');
+      btn.setAttribute('aria-pressed', 'true');
     } else {
       btn.textContent = '🔍 Fokus';
-      btn.style.cssText = 'margin-bottom:0;';
+      btn.classList.remove('is-on');
+      btn.setAttribute('aria-pressed', 'false');
     }
   }
 
@@ -5525,12 +5608,15 @@ Ustvari 4–7 vej, vsaka z 2–4 kratkimi podtočkami. Preprost jezik, primeren 
   function _updateDotikBtn() {
     const btn = document.getElementById('btnDotik');
     if (!btn) return;
+    btn.style.cssText = '';
     if (_dotikAktiven) {
       btn.textContent = '👆 Dotik besede: VKL';
-      btn.style.cssText = 'margin-bottom:0; background:var(--accent); color:#fff; border-color:var(--accent);';
+      btn.classList.add('is-on');
+      btn.setAttribute('aria-pressed', 'true');
     } else {
       btn.textContent = '👆 Dotik besede';
-      btn.style.cssText = 'margin-bottom:0;';
+      btn.classList.remove('is-on');
+      btn.setAttribute('aria-pressed', 'false');
     }
   }
 
