@@ -1797,6 +1797,199 @@
       .napredek-item-datum { width: 100%; padding-left: 42px; }
       .prebrano-btn { width: 100%; justify-content: center; }
     }
+
+    /* ══════════════════════════════════════════════════════════════
+       TOPLA PODOBA – samo vstopni (welcome) + domači (home) zaslon
+       ══════════════════════════════════════════════════════════════ */
+    :root {
+      --warm-bg-1: #fff5e6;
+      --warm-bg-2: #f0e7ff;
+      --warm-card: #ffffff;
+      --warm-border: #ffe1c2;
+      --warm-shadow: 0 8px 28px rgba(168, 116, 56, 0.12);
+      --warm-text: #4a3a2a;
+      --warm-text-soft: #7a6a5a;
+      --pastel-peach: #ffe5d4;
+      --pastel-cream: #fff6e6;
+      --pastel-lavender: #ece4f7;
+    }
+
+    /* Skrij obstoječi globalni header samo na vstopnem in domačem zaslonu –
+       brand/pozdravnik prevzame njegovo vlogo. Drugod (vključno z bralnikom)
+       ostane vse natanko tako, kot je bilo. */
+    body.on-welcome > .app-wrap > header,
+    body.on-home    > .app-wrap > header { display: none; }
+
+    /* Vstopni zaslon – topel pozdrav v kartici sredi zaslona */
+    #screen-welcome {
+      padding: 28px 8px;
+      min-height: 70vh;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    #screen-welcome.active { display: flex; }
+    .welcome-stage {
+      width: 100%;
+      max-width: 620px;
+      background: linear-gradient(155deg, var(--pastel-peach) 0%, var(--pastel-cream) 55%, var(--pastel-lavender) 100%);
+      border-radius: 28px;
+      padding: 28px 18px;
+      box-shadow: var(--warm-shadow);
+    }
+    .welcome-card {
+      background: var(--warm-card);
+      border: 1px solid var(--warm-border);
+      border-radius: 24px;
+      padding: 32px 24px 28px;
+      text-align: center;
+      box-shadow: 0 4px 18px rgba(168, 116, 56, 0.08);
+    }
+    .welcome-bridge-svg {
+      width: clamp(180px, 60vw, 300px);
+      height: auto;
+      display: block;
+      margin: 0 auto 14px;
+    }
+    .welcome-title {
+      font-family: var(--font);
+      font-size: clamp(1.8rem, 6vw, 2.4rem);
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+      line-height: 1.15;
+    }
+    .welcome-slogan {
+      font-family: var(--font);
+      font-size: clamp(1rem, 3.6vw, 1.18rem);
+      color: var(--warm-text);
+      margin-top: 10px;
+      line-height: 1.4;
+    }
+    .welcome-slogan-strong {
+      font-family: var(--font);
+      font-size: clamp(.95rem, 3.2vw, 1.08rem);
+      font-weight: 600;
+      color: var(--warm-text-soft);
+      margin-top: 8px;
+      letter-spacing: 0.02em;
+    }
+    .btn-zacni {
+      display: inline-block;
+      margin-top: 26px;
+      padding: 18px 52px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      font-family: var(--font);
+      font-size: clamp(1.05rem, 3.6vw, 1.25rem);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(74, 126, 207, 0.30);
+      transition: transform .15s, box-shadow .15s, background .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-zacni:hover,
+    .btn-zacni:focus-visible {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(74, 126, 207, 0.36);
+      outline: none;
+    }
+
+    /* Domači zaslon – topel brand vrh + mehkejše kartice */
+    .home-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      max-width: 620px;
+      margin: 0 auto 22px;
+      padding: 14px 22px;
+      background: linear-gradient(135deg, var(--pastel-peach) 0%, var(--pastel-cream) 50%, var(--pastel-lavender) 100%);
+      border: 1px solid var(--warm-border);
+      border-radius: 22px;
+      box-shadow: var(--warm-shadow);
+    }
+    .home-brand-logo {
+      width: 64px;
+      height: 64px;
+      flex-shrink: 0;
+    }
+    .home-brand-text {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      line-height: 1.15;
+    }
+    .home-brand-name {
+      font-family: var(--font);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+    .home-brand-tag {
+      font-family: var(--font);
+      font-size: .88rem;
+      color: var(--warm-text-soft);
+      margin-top: 3px;
+    }
+    .home-welcome-link-wrap {
+      text-align: center;
+      margin: -6px auto 18px;
+    }
+    .home-welcome-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: transparent;
+      border: 1px dashed #d9c2a0;
+      color: var(--warm-text-soft);
+      font-family: var(--font);
+      font-size: .85rem;
+      padding: 6px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: color .2s, border-color .2s, background .2s;
+    }
+    .home-welcome-link:hover,
+    .home-welcome-link:focus-visible {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: #fff;
+      outline: none;
+    }
+
+    /* Mehkejši, usklajen videz za obstoječe domače gumbe (brez spremembe vsebine).
+       Pravila pripenjamo le na #screen-home, da druge zaslone pustimo pri miru. */
+    #screen-home .home-btn.secondary {
+      background: linear-gradient(180deg, #fffaf2 0%, #fff0dd 100%);
+      color: var(--warm-text);
+      border: 1px solid #ffe1c2;
+      box-shadow: 0 4px 14px rgba(168, 116, 56, 0.10);
+    }
+    #screen-home .home-btn.secondary:hover:not(.disabled) {
+      background: linear-gradient(180deg, #fff5e7 0%, #ffe6cc 100%);
+      border-color: #ffcf99;
+      box-shadow: 0 8px 22px rgba(168, 116, 56, 0.16);
+    }
+    #screen-home .home-btn.primary {
+      box-shadow: 0 6px 18px rgba(74, 126, 207, 0.25);
+    }
+
+    /* Mobilna prilagoditev za vstopni + brand */
+    @media (max-width: 540px) {
+      .welcome-stage { padding: 18px 10px; border-radius: 22px; }
+      .welcome-card { padding: 26px 16px 22px; border-radius: 20px; }
+      .btn-zacni { padding: 16px 38px; }
+      .home-brand { gap: 12px; padding: 12px 16px; border-radius: 20px; }
+      .home-brand-logo { width: 52px; height: 52px; }
+      .home-brand-name { font-size: 1.18rem; }
+      .home-brand-tag { font-size: .82rem; }
+    }
   </style>
 </head>
 <body>
@@ -1808,8 +2001,83 @@
     <p>Bralnik – prilagodi besedilo po svojih željah</p>
   </header>
 
+  <!-- ══════════════ VSTOPNI ZASLON (pozdrav) ══════════════ -->
+  <div class="screen active" id="screen-welcome">
+    <div class="welcome-stage">
+      <div class="welcome-card">
+        <svg class="welcome-bridge-svg" viewBox="0 0 220 130" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+          <defs>
+            <linearGradient id="skyW" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#fff1d6"/>
+              <stop offset="1" stop-color="#d3ecff"/>
+            </linearGradient>
+          </defs>
+          <!-- nebo krog -->
+          <circle cx="110" cy="62" r="60" fill="url(#skyW)" opacity="0.85"/>
+          <!-- sonce -->
+          <circle cx="170" cy="38" r="13" fill="#ffd66e"/>
+          <circle cx="170" cy="38" r="13" fill="none" stroke="#f5b94a" stroke-width="2" opacity="0.6"/>
+          <!-- oblaček -->
+          <g fill="#ffffff" opacity="0.9">
+            <ellipse cx="55" cy="40" rx="14" ry="7"/>
+            <ellipse cx="65" cy="36" rx="10" ry="6"/>
+            <ellipse cx="48" cy="38" rx="8" ry="5"/>
+          </g>
+          <!-- voda -->
+          <path d="M 10 108 Q 35 102 60 108 T 110 108 T 160 108 T 210 108" stroke="#7ec6ee" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path d="M 10 118 Q 35 112 60 118 T 110 118 T 160 118 T 210 118" stroke="#a8d8f0" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/>
+          <!-- most: ploščad -->
+          <path d="M 20 86 L 200 86" stroke="#d99e54" stroke-width="6" stroke-linecap="round" fill="none"/>
+          <!-- glavni lok -->
+          <path d="M 50 86 Q 110 40 170 86" stroke="#b9783a" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <!-- stranske podpore -->
+          <line x1="55" y1="86" x2="55" y2="104" stroke="#b9783a" stroke-width="4" stroke-linecap="round"/>
+          <line x1="165" y1="86" x2="165" y2="104" stroke="#b9783a" stroke-width="4" stroke-linecap="round"/>
+          <!-- vmesni stebriček -->
+          <line x1="110" y1="56" x2="110" y2="86" stroke="#b9783a" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+          <!-- mali srček nad mostom (toplina) -->
+          <path d="M 110 30 c -3 -4 -10 -2 -10 4 c 0 5 10 11 10 11 c 0 0 10 -6 10 -11 c 0 -6 -7 -8 -10 -4 z" fill="#ff8aa3" opacity="0.85"/>
+        </svg>
+        <div class="welcome-title">Učni Most</div>
+        <p class="welcome-slogan">Učni pomočnik za otroke</p>
+        <p class="welcome-slogan-strong">Slikaj. Poslušaj. Razumi. Ponovi.</p>
+        <button type="button" class="btn-zacni" onclick="zacniIzVstopa()">Začni</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ══════════════ DOMAČI ZASLON ══════════════ -->
-  <div class="screen active" id="screen-home">
+  <div class="screen" id="screen-home">
+
+    <!-- Topel brand: mali logo + most -->
+    <div class="home-brand" role="img" aria-label="Učni Most">
+      <svg class="home-brand-logo" viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="skyH" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#fff1d6"/>
+            <stop offset="1" stop-color="#d3ecff"/>
+          </linearGradient>
+        </defs>
+        <circle cx="60" cy="50" r="46" fill="url(#skyH)" opacity="0.9"/>
+        <circle cx="90" cy="28" r="8" fill="#ffd66e"/>
+        <path d="M 12 72 L 108 72" stroke="#d99e54" stroke-width="5" stroke-linecap="round" fill="none"/>
+        <path d="M 28 72 Q 60 38 92 72" stroke="#b9783a" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <line x1="32" y1="72" x2="32" y2="86" stroke="#b9783a" stroke-width="3" stroke-linecap="round"/>
+        <line x1="88" y1="72" x2="88" y2="86" stroke="#b9783a" stroke-width="3" stroke-linecap="round"/>
+        <path d="M 6 92 Q 22 88 38 92 T 70 92 T 102 92 T 118 92" stroke="#7ec6ee" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div class="home-brand-text">
+        <span class="home-brand-name">Učni Most</span>
+        <span class="home-brand-tag">Učni pomočnik za otroke</span>
+      </div>
+    </div>
+
+    <div class="home-welcome-link-wrap">
+      <button type="button" class="home-welcome-link" onclick="pokaziVstopniZaslon()" aria-label="Znova pokaži pozdravni zaslon">
+        Pokaži pozdravni zaslon
+      </button>
+    </div>
+
     <div class="home-grid">
 
       <button class="home-btn secondary" onclick="showScreen('screen-paste')">
@@ -2434,6 +2702,20 @@
     if (id === 'screen-snov-teme') renderSnovTeme();
     if (id === 'screen-snov-besedila') renderSnovBesedila();
     if (id === 'screen-napredek') renderNapredek();
+    // Topla podoba se prižge samo na vstopnem (welcome) in domačem (home)
+    // zaslonu; drugi zasloni (vključno z bralnikom) ostanejo nespremenjeni.
+    document.body.classList.toggle('on-welcome', id === 'screen-welcome');
+    document.body.classList.toggle('on-home',    id === 'screen-home');
+    try { window.scrollTo(0, 0); } catch(_) {}
+  }
+
+  // ── Vstopni (pozdravni) zaslon ──
+  function zacniIzVstopa() {
+    try { localStorage.setItem('ucniMostPozdravViden', '1'); } catch(_) {}
+    showScreen('screen-home');
+  }
+  function pokaziVstopniZaslon() {
+    showScreen('screen-welcome');
   }
 
   // ── Fokus način – stanje ──
@@ -5544,6 +5826,16 @@ Zara je vzela globok dih in naredila prvi korak. Pod njeno nogo je zazvenel zvon
   // Inicializacija ob nalaganju
   document.addEventListener('DOMContentLoaded', function () {
     setReaderText(DEMO_TEXT);
+    // Pozdrav prikažemo samo ob prvem obisku; sicer gremo naravnost na domov.
+    let pozdravViden = false;
+    try { pozdravViden = localStorage.getItem('ucniMostPozdravViden') === '1'; } catch(_) {}
+    if (pozdravViden) {
+      showScreen('screen-home');
+    } else {
+      // privzeto je v HTML že aktiven #screen-welcome – le poskrbimo za
+      // toplo podobo (body class) in vrh strani.
+      showScreen('screen-welcome');
+    }
   });
 </script>
 </body>
