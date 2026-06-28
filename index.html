@@ -352,6 +352,53 @@
       color: var(--accent);
     }
 
+    /* Toggle switch (npr. velike tiskane črke) */
+    .switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .switch input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+    .switch-slider {
+      position: relative;
+      width: 48px;
+      height: 26px;
+      background: #ccc;
+      border-radius: 26px;
+      transition: background .2s;
+      flex-shrink: 0;
+    }
+    .switch-slider::before {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      top: 3px;
+      left: 3px;
+      transition: transform .2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.25);
+    }
+    .switch input:checked + .switch-slider { background: var(--accent); }
+    .switch input:checked + .switch-slider::before { transform: translateX(22px); }
+    .switch input:focus-visible + .switch-slider { box-shadow: 0 0 0 3px rgba(74,126,207,.35); }
+    .switch-text {
+      font-size: .9rem;
+      font-weight: 600;
+      color: #666;
+    }
+    body.dark-theme .switch-slider { background: #555; }
+    body.dark-theme .switch-text { color: #aaa; }
+
     /* ── Color picker panel ── */
     .color-panel {
       background: var(--panel);
@@ -594,6 +641,13 @@
       margin-bottom: .35em;
     }
     .reader-box strong { font-weight: 700; font-style: normal; }
+
+    /* Velike tiskane črke – samo vizualni prikaz, izvorno besedilo ostane nespremenjeno. */
+    .reader-box.uppercase-on {
+      text-transform: uppercase;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+    }
 
     /* ── Dark theme overrides ── */
     body.dark-theme {
@@ -1839,6 +1893,15 @@
           </div>
         </div>
 
+        <div class="ctrl-group">
+          <label for="uppercaseToggle">Velike tiskane črke</label>
+          <label class="switch" for="uppercaseToggle">
+            <input type="checkbox" id="uppercaseToggle" />
+            <span class="switch-slider" aria-hidden="true"></span>
+            <span class="switch-text" id="uppercaseLabel">izklopljeno</span>
+          </label>
+        </div>
+
       </div>
     </div>
 
@@ -2389,6 +2452,27 @@
     const v = parseFloat(this.value).toFixed(2);
     document.getElementById('lsVal').textContent = v + 'em';
     document.getElementById('readerBox').style.letterSpacing = v + 'em';
+  });
+
+  // ── Velike tiskane črke (samo vizualno; izvorno besedilo se ne spremeni) ──
+  const UPPERCASE_KEY = 'ucni_most_uppercase';
+  function _applyUppercase(on) {
+    const box = document.getElementById('readerBox');
+    if (box) box.classList.toggle('uppercase-on', !!on);
+    const lbl = document.getElementById('uppercaseLabel');
+    if (lbl) lbl.textContent = on ? 'vklopljeno' : 'izklopljeno';
+  }
+  (function _initUppercase() {
+    let on = false;
+    try { on = localStorage.getItem(UPPERCASE_KEY) === '1'; } catch (_) {}
+    const tog = document.getElementById('uppercaseToggle');
+    if (tog) tog.checked = on;
+    _applyUppercase(on);
+  })();
+  document.getElementById('uppercaseToggle').addEventListener('change', function () {
+    const on = !!this.checked;
+    try { localStorage.setItem(UPPERCASE_KEY, on ? '1' : '0'); } catch (_) {}
+    _applyUppercase(on);
   });
 
   // ── Color buttons ──
