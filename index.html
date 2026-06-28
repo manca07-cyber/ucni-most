@@ -27,6 +27,11 @@
       --fs: 20px;
       --lh: 1.8;
       --ls: 0.02em;
+      /* Trenutna barva strani / besedila iz bralnih nastavitev.
+         Posodablja jo applyColor() in jo uporabljajo vsi izpisi z besedilom,
+         ki ga otrok bere (povzetek, poenostavi, razdeli, težke besede ...). */
+      --reading-bg: #ffffff;
+      --reading-fg: #1a1a2e;
     }
 
     body {
@@ -789,14 +794,17 @@
       text-align: center;
       background: linear-gradient(135deg, #4a7ecf 0%, #6b5bcf 100%);
       color: #fff;
-      font-family: inherit;
+      font-family: var(--font);
       font-weight: 700;
       font-size: 1.25rem;
       letter-spacing: .02em;
       padding: 18px 32px;
       border-radius: 999px;
       box-shadow: 0 8px 22px rgba(74,126,207,.30), 0 2px 8px rgba(107,91,207,.20);
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
+    body.um-uppercase .mm-center-inner { text-transform: uppercase; }
     body.dark-theme .mm-center-inner {
       box-shadow: 0 8px 22px rgba(74,126,207,.45);
     }
@@ -825,7 +833,7 @@
     }
 
     .mm-branch-title {
-      font-family: inherit;
+      font-family: var(--font);
       font-weight: 700;
       font-size: 1.05rem;
       line-height: 1.3;
@@ -835,7 +843,10 @@
       align-items: center;
       gap: 9px;
       letter-spacing: .01em;
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
+    body.um-uppercase .mm-branch-title { text-transform: uppercase; }
     .mm-branch-title::before {
       content: "";
       width: 11px;
@@ -855,10 +866,14 @@
       position: relative;
       padding-left: 18px;
       margin: 6px 0;
+      font-family: var(--font);
       font-size: .95rem;
       line-height: 1.5;
       color: var(--text);
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
+    body.um-uppercase .mm-branch-list li { text-transform: uppercase; }
     .mm-branch-list li::before {
       content: "";
       position: absolute;
@@ -983,17 +998,24 @@
     }
 
     .ai-result-box {
-      background: var(--panel);
+      background: var(--reading-bg, var(--panel));
       border-radius: var(--radius);
       padding: 28px 32px;
       box-shadow: var(--shadow);
-      font-size: 1.05rem;
-      line-height: 1.85;
-      color: var(--text);
+      font-family: var(--font);
+      font-size: var(--fs);
+      line-height: var(--lh);
+      letter-spacing: var(--ls);
+      font-weight: 400;
+      color: var(--reading-fg, var(--text));
       margin-bottom: 16px;
       white-space: pre-wrap;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
       border-left: 5px solid var(--accent);
+      transition: background .3s, color .3s, font-family .2s, font-size .2s, line-height .2s, letter-spacing .2s;
     }
+    body.um-uppercase .ai-result-box { text-transform: uppercase; }
 
     .ai-result-actions {
       display: flex;
@@ -1127,9 +1149,11 @@
       justify-content: center;
       padding: 16px 14px;
       text-align: center;
-      font-weight: 600;
-      font-size: clamp(0.8rem, 2.5vw, 1rem);
-      line-height: 1.45;
+      font-family: var(--font);
+      font-weight: 400;
+      font-size: var(--fs);
+      line-height: var(--lh);
+      letter-spacing: var(--ls);
       min-height: 120px;
       overflow-wrap: break-word;
       word-break: break-word;
@@ -1137,7 +1161,10 @@
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
       box-shadow: var(--shadow);
+      transition: background .3s, color .3s, font-family .2s, font-size .2s, line-height .2s, letter-spacing .2s;
     }
+    body.um-uppercase .karta-front,
+    body.um-uppercase .karta-back { text-transform: uppercase; }
     .karta-front {
       background: var(--accent);
       color: #fff;
@@ -1166,11 +1193,15 @@
     }
 
     .kviz-vprasanje-text {
-      font-weight: 700;
-      font-size: 1.05rem;
+      font-family: var(--font);
+      font-weight: 400;
+      font-size: var(--fs);
+      letter-spacing: var(--ls);
       margin-bottom: 14px;
-      line-height: 1.5;
+      line-height: var(--lh);
+      transition: font-family .2s, font-size .2s, line-height .2s, letter-spacing .2s;
     }
+    body.um-uppercase .kviz-vprasanje-text { text-transform: uppercase; }
 
     .kviz-moznosti {
       display: flex;
@@ -1183,13 +1214,18 @@
       border: 2px solid #ccc;
       border-radius: 30px;
       background: #fff;
-      font-family: inherit;
-      font-size: .95rem;
-      font-weight: 600;
+      font-family: var(--font);
+      font-size: var(--fs);
+      line-height: var(--lh);
+      letter-spacing: var(--ls);
+      font-weight: 400;
       cursor: pointer;
       text-align: left;
-      transition: border-color .2s, background .2s, color .2s;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      transition: border-color .2s, background .2s, color .2s, font-family .2s, font-size .2s, line-height .2s, letter-spacing .2s;
     }
+    body.um-uppercase .kviz-moznost { text-transform: uppercase; }
     body.dark-theme .kviz-moznost { background: #1a1a2e; color: #e8e8f0; border-color: #555; }
     .kviz-moznost:hover:not(:disabled) { border-color: var(--accent); background: #eef3fb; }
     body.dark-theme .kviz-moznost:hover:not(:disabled) { background: #2a2a40; }
@@ -1225,28 +1261,38 @@
     }
 
     .tezka-beseda {
-      background: var(--panel);
+      background: var(--reading-bg, var(--panel));
       border-radius: var(--radius);
       padding: 16px 20px;
       box-shadow: var(--shadow);
       display: flex;
       gap: 14px;
       align-items: flex-start;
+      transition: background .3s;
     }
 
     .tezka-beseda-ime {
+      font-family: var(--font);
       font-weight: 700;
-      font-size: 1rem;
+      font-size: var(--fs);
+      letter-spacing: var(--ls);
       color: var(--accent);
       min-width: 120px;
       flex-shrink: 0;
+      transition: font-family .2s, font-size .2s, letter-spacing .2s;
     }
+    body.um-uppercase .tezka-beseda-ime { text-transform: uppercase; }
 
     .tezka-beseda-razlaga {
-      font-size: .95rem;
-      line-height: 1.55;
-      color: var(--text);
+      font-family: var(--font);
+      font-size: var(--fs);
+      line-height: var(--lh);
+      letter-spacing: var(--ls);
+      font-weight: 400;
+      color: var(--reading-fg, var(--text));
+      transition: color .3s, font-family .2s, font-size .2s, line-height .2s, letter-spacing .2s;
     }
+    body.um-uppercase .tezka-beseda-razlaga { text-transform: uppercase; }
 
     /* ── Moja šolska snov ── */
     .snov-breadcrumb {
@@ -1354,8 +1400,8 @@
     }
     .slikaj-btn.camera { background: var(--accent); color: #fff; }
     .slikaj-btn.camera:hover { background: var(--accent-hover); }
-    .slikaj-btn.file   { background: none; color: var(--accent); border: 2px solid var(--accent); }
-    .slikaj-btn.file:hover { background: var(--accent); color: #fff; }
+    .slikaj-btn.file   { background: var(--accent); color: #fff; }
+    .slikaj-btn.file:hover { background: var(--accent-hover); }
 
     .slikaj-warning {
       background: #fff3cd;
@@ -2594,7 +2640,7 @@
           <span class="btn-icon">🏫</span>
           Osnovna šola
         </button>
-        <button class="home-btn secondary" onclick="snovIzberiSolo('srednja')">
+        <button class="home-btn primary" onclick="snovIzberiSolo('srednja')">
           <span class="btn-icon">🎓</span>
           Srednja šola
         </button>
@@ -2715,8 +2761,8 @@
         <div id="ssStep1">
           <p style="margin-bottom:16px;font-size:.95rem;color:#666;">Izberi vrsto šole:</p>
           <div style="display:flex;gap:14px;flex-wrap:wrap;">
-            <button class="btn-primary"   onclick="ssIzberiSolo('osnovna')">🏫 Osnovna šola</button>
-            <button class="btn-secondary" onclick="ssIzberiSolo('srednja')">🎓 Srednja šola</button>
+            <button class="btn-primary" onclick="ssIzberiSolo('osnovna')">🏫 Osnovna šola</button>
+            <button class="btn-primary" onclick="ssIzberiSolo('srednja')">🎓 Srednja šola</button>
           </div>
         </div>
 
@@ -3139,18 +3185,25 @@
   });
 
   // ── Sliders ──
+  // Vsak drsnik posodobi pripadajočo CSS spremenljivko na korenu, da se
+  // nastavitev samodejno odraža povsod, kjer se uporablja var(--fs) / var(--lh) /
+  // var(--ls) – torej tudi v izpisih Razumevanja, kartic, kviza in težkih besed.
   document.getElementById('fsSlider').addEventListener('input', function () {
-    document.getElementById('fsVal').textContent = this.value + 'px';
-    _readerTargets().forEach(el => { el.style.fontSize = this.value + 'px'; });
+    const px = this.value + 'px';
+    document.getElementById('fsVal').textContent = px;
+    document.documentElement.style.setProperty('--fs', px);
+    _readerTargets().forEach(el => { el.style.fontSize = px; });
   });
   document.getElementById('lhSlider').addEventListener('input', function () {
     const v = parseFloat(this.value).toFixed(1);
     document.getElementById('lhVal').textContent = v;
+    document.documentElement.style.setProperty('--lh', v);
     _readerTargets().forEach(el => { el.style.lineHeight = v; });
   });
   document.getElementById('lsSlider').addEventListener('input', function () {
     const v = parseFloat(this.value).toFixed(2);
     document.getElementById('lsVal').textContent = v + 'em';
+    document.documentElement.style.setProperty('--ls', v + 'em');
     _readerTargets().forEach(el => { el.style.letterSpacing = v + 'em'; });
   });
 
@@ -3158,6 +3211,9 @@
   const UPPERCASE_KEY = 'ucni_most_uppercase';
   function _applyUppercase(on) {
     _readerTargets().forEach(el => el.classList.toggle('uppercase-on', !!on));
+    // Razred na body omogoči, da nastavitev velikih tiskanih črk velja tudi
+    // za vse druge izpise (povzetek, kartice, kviz, težke besede, miselni vzorec).
+    document.body.classList.toggle('um-uppercase', !!on);
     const lbl = document.getElementById('uppercaseLabel');
     if (lbl) lbl.textContent = on ? 'vklopljeno' : 'izklopljeno';
   }
@@ -3179,6 +3235,10 @@
     const bg = PALETTES[state.color][state.intensity];
     const fg = TEXT_COLORS[state.color];
     document.body.style.background = bg;
+    // CSS spremenljivki za bralno ozadje/barvo besedila uporabljajo vsi izpisi,
+    // ki sledijo bralnim nastavitvam (povzetek, poenostavi, razdeli, težke besede).
+    document.documentElement.style.setProperty('--reading-bg', bg);
+    document.documentElement.style.setProperty('--reading-fg', fg);
     _readerTargets().forEach(box => {
       box.style.background = bg;
       box.style.color = fg;
