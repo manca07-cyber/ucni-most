@@ -675,8 +675,23 @@
     }
 
     /* ── Predogled nastavitev besedila ── */
-    .reader-preview-wrap {
+    /* Nastavitve + Predogled drug ob drugem (desktop) / Predogled lepljiv (mobile) */
+    .reader-settings-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
       margin-bottom: 28px;
+      align-items: start;
+    }
+    .reader-settings-col { min-width: 0; }
+    .reader-settings-col > .panel,
+    .reader-settings-col > .color-panel {
+      margin-bottom: 16px;
+    }
+    .reader-settings-col > :last-child { margin-bottom: 0; }
+
+    .reader-preview-wrap {
+      margin: 0;
     }
     .reader-preview-title {
       font-size: .78rem;
@@ -686,13 +701,68 @@
       color: #888;
       margin-bottom: 8px;
       padding-left: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .reader-preview-title .reader-preview-hint {
+      font-size: .68rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: none;
+      color: #aaa;
     }
     body.dark-theme .reader-preview-title { color: #b8b8c8; }
+    body.dark-theme .reader-preview-title .reader-preview-hint { color: #8e8ea2; }
     .reader-box.reader-preview {
       padding: 18px 22px;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+      overflow-y: auto;
     }
     .reader-box.reader-preview p {
-      margin: 0;
+      margin: 0 0 .6em;
+    }
+    .reader-box.reader-preview p:last-child { margin-bottom: 0; }
+
+    /* Desktop: dva stolpca, predogled je lepljiv (sticky) v desnem stolpcu. */
+    @media (min-width: 880px) {
+      .reader-settings-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+        gap: 24px;
+      }
+      .reader-preview-col {
+        position: sticky;
+        top: 16px;
+        align-self: start;
+      }
+      .reader-box.reader-preview {
+        max-height: calc(100vh - 80px);
+      }
+    }
+
+    /* Mobile: predogled je kompakten lepljiv pas na vrhu stolpca,
+       pod njim ostanejo drsniki vidni in dosegljivi. */
+    @media (max-width: 879px) {
+      .reader-preview-col {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        padding: 6px 0 8px;
+        background: var(--reading-bg, var(--bg));
+        transition: background .3s;
+      }
+      .reader-box.reader-preview {
+        max-height: 22vh;
+      }
+      /* Na mobilnem predogled prikaži NAD nastavitvami, da je vedno viden. */
+      .reader-preview-col { order: -1; }
+      .reader-settings-col { order: 0; }
+    }
+    @media (max-width: 560px) {
+      .reader-box.reader-preview { padding: 12px 14px; max-height: 20vh; }
+      .reader-preview-title { margin-bottom: 6px; }
     }
 
     /* ── Dark theme overrides ── */
@@ -2428,6 +2498,9 @@
       <button type="button" class="reader-action-btn" id="btnDotik" aria-pressed="false" onclick="toggleDotikBesede()">👆 Dotik besede</button>
     </div>
 
+    <!-- Nastavitve besedila + Predogled drug ob drugem (desktop) / Predogled lepljiv (mobile) -->
+    <div class="reader-settings-grid">
+    <div class="reader-settings-col">
     <!-- Font & sliders -->
     <div class="panel">
       <div class="panel-title">Nastavitve besedila</div>
@@ -2505,14 +2578,21 @@
         <button class="intensity-btn"        data-intensity="strong">Močnejša</button>
       </div>
     </div>
+    </div><!-- /.reader-settings-col -->
 
     <!-- Predogled nastavitev besedila (živo se spreminja ob premikanju drsnikov) -->
-    <div class="reader-preview-wrap">
-      <div class="reader-preview-title">Predogled</div>
-      <div class="reader-box reader-preview" id="readerPreview" aria-live="polite">
-        <p>Tako bo videti besedilo, ki ga boš bral. Spremembe nastavitev se pokažejo tukaj v živo.</p>
+    <aside class="reader-preview-col">
+      <div class="reader-preview-wrap">
+        <div class="reader-preview-title">
+          <span>Predogled</span>
+          <span class="reader-preview-hint" aria-hidden="true">živo</span>
+        </div>
+        <div class="reader-box reader-preview" id="readerPreview" aria-live="polite">
+          <p>Tako bo videti besedilo, ki ga boš bral. Spremembe nastavitev se pokažejo tukaj v živo.</p>
+        </div>
       </div>
-    </div>
+    </aside>
+    </div><!-- /.reader-settings-grid -->
 
     <!-- ══ Branje na glas ══ -->
     <div class="tts-panel">
@@ -3136,6 +3216,9 @@
     if (typeof _dotikZapri === 'function') _dotikZapri();
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
+    if (id === 'screen-reader' && typeof _updateReaderPreview === 'function') {
+      try { _updateReaderPreview(); } catch (_) {}
+    }
     if (id === 'screen-saved') renderSavedList();
     if (id === 'screen-snov-razredi') renderSnovRazredi();
     if (id === 'screen-snov-predmeti') renderSnovPredmeti();
@@ -3207,6 +3290,51 @@
       document.getElementById('readerBox'),
       document.getElementById('readerPreview'),
     ].filter(Boolean);
+  }
+
+  // Vzorčno besedilo, ki se prikaže v predogledu, kadar uporabnik še nima
+  // naloženega lastnega besedila. Dovolj dolgo, da so vidne tudi drobne
+  // spremembe (razmik med črkami in vrsticami).
+  const _PREVIEW_SAMPLE = 'Tako bo videti besedilo, ki ga boš bral. Spremembe nastavitev se v predogledu pokažejo v živo – pisava, velikost črk, razmik med vrsticami in razmik med črkami. Tudi izbrana barva strani in jakost se uporabita kot ozadje, da vidiš, kako bo izgledalo tvoje pravo bralno okolje.';
+
+  // Pripravi krajši odlomek izvirnega besedila (prvih nekaj stavkov / odstavek
+  // ali dva), da je v predogledu viden uporabnikov resnični vsebinski jezik.
+  function _previewExcerpt(raw) {
+    const src = (typeof raw === 'string' && raw.trim()) ? raw : _PREVIEW_SAMPLE;
+    let clean = '';
+    try { clean = _stripMarkdown(src); } catch (_) { clean = src; }
+    clean = clean.replace(/\r/g, '').trim();
+    if (!clean) return _PREVIEW_SAMPLE;
+    // Vzemi prva največ dva odstavka.
+    const paragraphs = clean.split(/\n{2,}/).map(p => p.trim()).filter(Boolean).slice(0, 2);
+    let excerpt = paragraphs.join('\n\n');
+    // Če je še vedno predolgo, omeji na ~420 znakov in odreži pri stavku.
+    const MAX = 420;
+    if (excerpt.length > MAX) {
+      const cut = excerpt.slice(0, MAX);
+      const lastDot = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('! '), cut.lastIndexOf('? '));
+      excerpt = (lastDot > 120 ? cut.slice(0, lastDot + 1) : cut) + ' …';
+    }
+    return excerpt;
+  }
+
+  // Posodobi predogled bralnih nastavitev z uporabnikovim besedilom (ali vzorcem).
+  function _updateReaderPreview() {
+    const box = document.getElementById('readerPreview');
+    if (!box) return;
+    const excerpt = _previewExcerpt(_readerPlainText);
+    const paragraphs = excerpt.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+    box.innerHTML = '';
+    paragraphs.forEach(p => {
+      const el = document.createElement('p');
+      el.textContent = p.replace(/\n+/g, ' ');
+      box.appendChild(el);
+    });
+    if (!paragraphs.length) {
+      const el = document.createElement('p');
+      el.textContent = _PREVIEW_SAMPLE;
+      box.appendChild(el);
+    }
   }
 
   // ── Font ──
@@ -3440,6 +3568,7 @@
     _updateZlogiBtn();
     const box = document.getElementById('readerBox');
     _renderMarkdownToBox(txt, box);
+    _updateReaderPreview();
     applyColor();
     wrapWordsForTTS();
     // Konteksst za "Sledenje napredka": je trenutno besedilo iz Moje šolske snovi?
